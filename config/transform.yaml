@@ -1,0 +1,17 @@
+train:
+  MelSpectrogram:
+  FrequencyMasking:
+    freq_mask_param: 10
+    iid_masks: True
+  TimeMasking:
+    time_mask_param: 10
+    iid_masks: True
+
+val:
+  MelSpectrogram:
+
+test:
+  MelSpectrogram:
+
+predict:
+  MelSpectrogram:
