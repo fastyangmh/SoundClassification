@@ -1,17 +1,36 @@
 train:
-  MelSpectrogram:
-  FrequencyMasking:
-    freq_mask_param: 10
-    iid_masks: True
-  TimeMasking:
-    time_mask_param: 10
-    iid_masks: True
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
+    ColorJitter:
+    RandomRotation: 90
+    RandomHorizontalFlip:
+    RandomVerticalFlip:
+    RandomErasing:
 
 val:
-  MelSpectrogram:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
 
 test:
-  MelSpectrogram:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
 
 predict:
-  MelSpectrogram:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
