@@ -1,7 +1,9 @@
 # import
 import argparse
 from os.path import abspath, join
+from os import makedirs
 import torch
+import numpy as np
 
 # class
 
@@ -28,6 +30,14 @@ class ProjectParameters:
                                   help='number of GPUs to train on (int) or which GPUs to train on (list or str) applied per node. if give -1 will use all available GPUs.')
 
         # data preparation
+        self._parser.add_argument('--sample_rate', type=self._str_to_int, required=True,
+                                  help='sample rate of audio signal. if use a predefined dataset, please set value as None.')
+        self._parser.add_argument('--max_waveform_length', type=self._str_to_int, required=True,
+                                  help='the maximum length of the waveform (seconds). if use a predefined dataset, please set value as None.')
+        self._parser.add_argument('--filter_type', type=self._str_to_str, default='bandpass', choices=[
+                                  'bandpass', 'lowpass', 'highpass', None], help='the filter type provided bandpass, lowpass, highpass, and None.')
+        self._parser.add_argument('--cutoff_freq', type=self._str_to_int_list,
+                                  default=[1000, 2000], help='filter cutoff frequency.')
         self._parser.add_argument(
             '--batch_size', type=int, default=32, help='how many samples per batch to load.')
         self._parser.add_argument('--classes', type=self._str_to_str_list, required=True,
@@ -40,6 +50,13 @@ class ProjectParameters:
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
         self._parser.add_argument('--transform_config_path', type=str,
                                   default='config/transform.yaml', help='the transform config path.')
+
+        # debug
+        self._parser.add_argument(
+            '--max_files', type=self._str_to_int, default=None, help='the maximum number of files for loading files.')
+
+    def _str_to_str(self, s):
+        return None if s == 'None' or s == 'none' else s
 
     def _str_to_int(self, s):
         return None if s == 'None' or s == 'none' else int(s)
@@ -60,6 +77,7 @@ class ProjectParameters:
             # the classes of predefined dataset will automatically get from data_preparation
             project_parameters.data_path = join(
                 project_parameters.data_path, project_parameters.predefined_dataset)
+            makedirs(project_parameters.data_path, exist_ok=True)
         project_parameters.use_cuda = torch.cuda.is_available(
         ) and not project_parameters.no_cuda
         project_parameters.gpus = project_parameters.gpus if project_parameters.use_cuda else 0
@@ -67,6 +85,8 @@ class ProjectParameters:
         # data preparation
         if project_parameters.predefined_dataset is not None:
             if project_parameters.predefined_dataset == 'SPEECHCOMMANDS':
+                project_parameters.sample_rate = 16000
+                project_parameters.max_waveform_length = 1 * project_parameters.sample_rate
                 project_parameters.num_classes = 35
             else:
                 assert False, 'please check the predefined dataset. the predefined dataset: {}'.format(
@@ -75,6 +95,8 @@ class ProjectParameters:
             project_parameters.classes = {
                 c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
             project_parameters.num_classes = len(project_parameters.classes)
+        assert not any((np.array(project_parameters.cutoff_freq)/project_parameters.sample_rate)
+                       > 1), "please check the cutoff_freq whether it satisfies Nyquist's theorem."
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
         project_parameters.transform_config_path = abspath(
             project_parameters.transform_config_path)
