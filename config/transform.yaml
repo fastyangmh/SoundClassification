@@ -1,0 +1,36 @@
+train:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
+    ColorJitter:
+    RandomRotation: 90
+    RandomHorizontalFlip:
+    RandomVerticalFlip:
+    RandomErasing:
+
+val:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
+
+test:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
+
+predict:
+  audio:
+    MelSpectrogram:
+  vision:
+    Resize:
+      - 224
+      - 224
