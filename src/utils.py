@@ -6,8 +6,31 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from torchaudio.functional import lowpass_biquad, highpass_biquad
+import torch
+from os.path import join
+from glob import glob
 
 # def
+
+
+def get_files(file_path, file_type):
+    files = []
+    if type(file_type) != list:
+        file_type = [file_type]
+    for v in file_type:
+        files += sorted(glob(join(file_path, '*.{}'.format(v))))
+    return files
+
+
+def calculate_data_weight(classes, data_path):
+    data_weight = {}
+    for c in classes.keys():
+        files = get_files(file_path=join(
+            data_path, 'train/{}'.format(c)), file_type=['wav'])
+        data_weight[c] = len(files)
+    data_weight = {c: 1-(data_weight[c]/sum(data_weight.values()))
+                   for c in data_weight.keys()}
+    return data_weight
 
 
 def load_checkpoint(model, use_cuda, checkpoint_path):

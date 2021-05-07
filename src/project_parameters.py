@@ -60,9 +60,31 @@ class ProjectParameters:
         self._parser.add_argument('--optimizer_config_path', type=str,
                                   default='config/optimizer.yaml', help='the optimizer config path.')
 
+        # train
+        self._parser.add_argument('--val_iter', type=self._str_to_int,
+                                  default=None, help='the number of validation iteration.')
+        self._parser.add_argument(
+            '--lr', type=float, default=1e-3, help='the learning rate.')
+        self._parser.add_argument(
+            '--train_iter', type=int, default=100, help='the number of training iteration.')
+        self._parser.add_argument('--lr_scheduler', type=str, default='CosineAnnealingLR', choices=[
+                                  'StepLR', 'CosineAnnealingLR'], help='the lr scheduler while training model.')
+        self._parser.add_argument(
+            '--step_size', type=int, default=10, help='period of learning rate decay.')
+        self._parser.add_argument('--gamma', type=int, default=0.1,
+                                  help='multiplicative factor of learning rate decay.')
+        self._parser.add_argument('--no_early_stopping', action='store_true',
+                                  default=False, help='whether to use early stopping while training.')
+        self._parser.add_argument('--patience', type=int, default=3,
+                                  help='number of checks with no improvement after which training will be stopped.')
+
         # debug
         self._parser.add_argument(
             '--max_files', type=self._str_to_int, default=None, help='the maximum number of files for loading files.')
+        self._parser.add_argument('--profiler', type=str, default=None, choices=[
+            'simple', 'advanced'], help='to profile individual steps during training and assist in identifying bottlenecks.')
+        self._parser.add_argument('--weights_summary', type=str, default=None, choices=[
+                                  'top', 'full'], help='prints a summary of the weights when training begins.')
 
     def _str_to_str(self, s):
         return None if s == 'None' or s == 'none' else s
@@ -114,6 +136,14 @@ class ProjectParameters:
         # model
         project_parameters.optimizer_config_path = abspath(
             project_parameters.optimizer_config_path)
+
+        # train
+        if project_parameters.val_iter is None:
+            project_parameters.val_iter = project_parameters.train_iter
+        project_parameters.use_early_stopping = not project_parameters.no_early_stopping
+        if project_parameters.use_early_stopping:
+            # because the PyTorch lightning needs to get validation loss in every training epoch.
+            project_parameters.val_iter = 1
 
         return project_parameters
 
