@@ -9,7 +9,7 @@ import numpy as np
 
 
 class ProjectParameters:
-    def __init__(self) -> None:
+    def __init__(self):
         self._parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -85,9 +85,9 @@ class ProjectParameters:
         # data preparation
         if project_parameters.predefined_dataset is not None:
             if project_parameters.predefined_dataset == 'SPEECHCOMMANDS':
+                project_parameters.num_classes = 35
                 project_parameters.sample_rate = 16000
                 project_parameters.max_waveform_length = 1 * project_parameters.sample_rate
-                project_parameters.num_classes = 35
             else:
                 assert False, 'please check the predefined dataset. the predefined dataset: {}'.format(
                     project_parameters.predefined_dataset)
@@ -95,6 +95,7 @@ class ProjectParameters:
             project_parameters.classes = {
                 c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
             project_parameters.num_classes = len(project_parameters.classes)
+            project_parameters.max_waveform_length *= project_parameters.sample_rate
         assert not any((np.array(project_parameters.cutoff_freq)/project_parameters.sample_rate)
                        > 1), "please check the cutoff_freq whether it satisfies Nyquist's theorem."
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None

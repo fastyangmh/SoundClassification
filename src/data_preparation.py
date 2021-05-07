@@ -1,30 +1,53 @@
 # import
+from os.path import join
+from torch.utils.data.dataset import random_split
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningDataModule
 from src.utils import digital_filter, get_transform_from_file
 from torchaudio.datasets import SPEECHCOMMANDS
+import torchaudio
 import numpy as np
 from torch.utils.data import DataLoader
 from src.utils import pad_waveform
+from torchvision.datasets import DatasetFolder
 import warnings
 warnings.filterwarnings('ignore')
 
-# def
-
 
 # class
+class AudioFolder(DatasetFolder):
+    def __init__(self, root: str, project_parameters, loader=None, transform=None):
+        super().__init__(root, loader, extensions=('.wav'), transform=transform)
+        self.project_parameters = project_parameters
+        self.transform = transform
+
+    def __getitem__(self, index: int):
+        filepath, label = self.samples[index]
+        data, sample_rate = torchaudio.load(filepath=filepath,)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
+            sample_rate)
+        if self.project_parameters.filter_type is not None:
+            data = digital_filter(waveform=data, filter_type=self.project_parameters.filter_type,
+                                  sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
+        if len(data[0]) < self.project_parameters.max_waveform_length:
+            data = pad_waveform(
+                waveform=data[0], max_waveform_length=self.project_parameters.max_waveform_length)[None]
+        else:
+            data = data[:, :self.project_parameters.max_waveform_length]
+        if self.transform is not None:
+            data = self.transform['audio'](data)
+            if 'vision' in self.transform:
+                data = self.transform['vision'](data)
+        return data, label
 
 
 class SPEECHCOMMANDS(SPEECHCOMMANDS):
-    def __init__(self, root, download: bool, subset, project_parameters, transform=None) -> None:
+    def __init__(self, root, download: bool, subset, project_parameters, transform=None):
         super().__init__(root, download=download, subset=subset)
         self.project_parameters = project_parameters
         self.transform = transform
         self.class_to_idx = {c: idx for idx, c in enumerate(['backward', 'bed', 'bird', 'cat', 'dog', 'down', 'eight', 'five', 'follow', 'forward', 'four', 'go', 'happy', 'house',
                                                              'learn', 'left', 'marvin', 'nine', 'no', 'off', 'on', 'one', 'right', 'seven', 'sheila', 'six', 'stop', 'three', 'tree', 'two', 'up', 'visual', 'wow', 'yes', 'zero'])}
-
-    def __len__(self) -> int:
-        return super().__len__()
 
     def __getitem__(self, n: int):
         data, sample_rate, label = super().__getitem__(n)[:3]
@@ -35,7 +58,7 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
                                   sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
         if len(data[0]) < self.project_parameters.max_waveform_length:
             data = pad_waveform(
-                waveform=data[0], max_waveform_length=project_parameters.max_waveform_length)[None]
+                waveform=data[0], max_waveform_length=self.project_parameters.max_waveform_length)[None]
         else:
             data = data[:, :self.project_parameters.max_waveform_length]
         if self.transform is not None:
@@ -54,7 +77,22 @@ class DataModule(LightningDataModule):
 
     def prepare_data(self):
         if self.project_parameters.predefined_dataset is None:
-            pass
+            self.dataset = {}
+            for stage in ['train', 'val', 'test']:
+                self.dataset[stage] = AudioFolder(root=join(self.project_parameters.data_path, stage),
+                                                  transform=self.transform_dict[stage], project_parameters=self.project_parameters)
+                # modify the maximum number of files
+                if self.project_parameters.max_files is not None:
+                    lengths = (self.project_parameters.max_files, len(
+                        self.dataset[stage])-self.project_parameters.max_files)
+                    self.dataset[stage] = random_split(
+                        dataset=self.dataset[stage], lengths=lengths)[0]
+            if self.project_parameters.max_files is not None:
+                assert self.dataset['train'].dataset.class_to_idx == self.project_parameters.classes, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                    self.dataset['train'].dataset.class_to_idx, self.project_parameters.classes)
+            else:
+                assert self.dataset['train'].class_to_idx == self.project_parameters.classes, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                    self.dataset[stage].class_to_idx, self.project_parameters.classes)
         else:
             train_set = SPEECHCOMMANDS(root=self.project_parameters.data_path, download=True, subset='training',
                                        project_parameters=self.project_parameters, transform=self.transform_dict['train'])
@@ -71,13 +109,13 @@ class DataModule(LightningDataModule):
             # get the classes from the train_set
             self.project_parameters.classes = self.dataset['train'].class_to_idx
 
-    def train_dataloader(self) -> DataLoader:
+    def train_dataloader(self):
         return DataLoader(dataset=self.dataset['train'], batch_size=self.project_parameters.batch_size, shuffle=True, pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
 
-    def val_dataloader(self) -> DataLoader:
+    def val_dataloader(self):
         return DataLoader(dataset=self.dataset['val'], batch_size=self.project_parameters.batch_size, shuffle=False, pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
 
-    def test_dataloader(self) -> DataLoader:
+    def test_dataloader(self):
         return DataLoader(dataset=self.dataset['test'], batch_size=self.project_parameters.batch_size, shuffle=False, pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
 
     def get_data_loaders(self):
