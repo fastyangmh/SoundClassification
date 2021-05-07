@@ -4,6 +4,7 @@ from os.path import abspath, join
 from os import makedirs
 import torch
 import numpy as np
+from timm import list_models
 
 # class
 
@@ -50,6 +51,14 @@ class ProjectParameters:
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
         self._parser.add_argument('--transform_config_path', type=str,
                                   default='config/transform.yaml', help='the transform config path.')
+
+        # model
+        self._parser.add_argument('--backbone_model', type=str, required=True,
+                                  help='if you want to use a self-defined model, give the path of the self-defined model. otherwise, the provided backbone model is as a followed list. {}'.format(list_models()))
+        self._parser.add_argument('--checkpoint_path', type=str, default=None,
+                                  help='the path of the pre-trained model checkpoint.')
+        self._parser.add_argument('--optimizer_config_path', type=str,
+                                  default='config/optimizer.yaml', help='the optimizer config path.')
 
         # debug
         self._parser.add_argument(
@@ -101,6 +110,10 @@ class ProjectParameters:
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
         project_parameters.transform_config_path = abspath(
             project_parameters.transform_config_path)
+
+        # model
+        project_parameters.optimizer_config_path = abspath(
+            project_parameters.optimizer_config_path)
 
         return project_parameters
 

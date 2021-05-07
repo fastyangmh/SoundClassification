@@ -10,18 +10,32 @@ from torchaudio.functional import lowpass_biquad, highpass_biquad
 # def
 
 
+def load_checkpoint(model, use_cuda, checkpoint_path):
+    map_location = torch.device(
+        device='cuda') if use_cuda else torch.device(device='cpu')
+    checkpoint = torch.load(f=checkpoint_path, map_location=map_location)
+    if model.loss_function.weight is None:
+        # delete the loss_function.weight in the checkpoint, because this key does not work while loading the model.
+        del checkpoint['state_dict']['loss_function.weight']
+    else:
+        # assign the new loss_function weight to the checkpoint
+        checkpoint['state_dict']['loss_function.weight'] = model.loss_function.weight
+    model.load_state_dict(checkpoint['state_dict'])
+    return model
+
+
 def digital_filter(waveform, filter_type, sample_rate, cutoff_freq):
     if filter_type == 'bandpass':
         waveform = lowpass_biquad(
-            waveform=waveform, sample_rate=sample_rate, cutoff_freq=max(cutoff_freq),Q=1)
+            waveform=waveform, sample_rate=sample_rate, cutoff_freq=max(cutoff_freq), Q=1)
         waveform = highpass_biquad(
-            waveform=waveform, sample_rate=sample_rate, cutoff_freq=min(cutoff_freq),Q=1)
+            waveform=waveform, sample_rate=sample_rate, cutoff_freq=min(cutoff_freq), Q=1)
     elif filter_type == 'lowpass':
         waveform = lowpass_biquad(
-            waveform=waveform, sample_rate=sample_rate, cutoff_freq=max(cutoff_freq),Q=1)
+            waveform=waveform, sample_rate=sample_rate, cutoff_freq=max(cutoff_freq), Q=1)
     elif filter_type == 'highpass':
         waveform = highpass_biquad(
-            waveform=waveform, sample_rate=sample_rate, cutoff_freq=min(cutoff_freq),Q=1)
+            waveform=waveform, sample_rate=sample_rate, cutoff_freq=min(cutoff_freq), Q=1)
     return waveform
 
 
