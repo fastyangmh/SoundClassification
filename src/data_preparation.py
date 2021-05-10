@@ -16,14 +16,14 @@ warnings.filterwarnings('ignore')
 
 # class
 class AudioFolder(DatasetFolder):
-    def __init__(self, root: str, project_parameters, loader=None, transform=None):
+    def __init__(self, root: str, project_parameters, transform=None, loader=None):
         super().__init__(root, loader, extensions=('.wav'), transform=transform)
         self.project_parameters = project_parameters
         self.transform = transform
 
     def __getitem__(self, index: int):
         filepath, label = self.samples[index]
-        data, sample_rate = torchaudio.load(filepath=filepath,)
+        data, sample_rate = torchaudio.load(filepath=filepath)
         assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
             sample_rate)
         if self.project_parameters.filter_type is not None:
