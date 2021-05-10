@@ -78,6 +78,16 @@ class ProjectParameters:
         self._parser.add_argument('--patience', type=int, default=3,
                                   help='number of checks with no improvement after which training will be stopped.')
 
+        # tune
+        self._parser.add_argument(
+            '--tune_iter', type=int, default=100, help='the number of tuning iteration.')
+        self._parser.add_argument('--tune_cpu', type=int, default=1,
+                                  help='CPU resources to allocate per trial in hyperparameter tuning.')
+        self._parser.add_argument('--tune_gpu', type=float, default=None,
+                                  help='GPU resources to allocate per trial in hyperparameter tuning.')
+        self._parser.add_argument('--hyperparameter_config_path', type=str,
+                                  default='config/hyperparameter_config.yaml', help='the hyperparameter config path.')
+
         # debug
         self._parser.add_argument(
             '--max_files', type=self._str_to_int, default=None, help='the maximum number of files for loading files.')
@@ -85,6 +95,8 @@ class ProjectParameters:
             'simple', 'advanced'], help='to profile individual steps during training and assist in identifying bottlenecks.')
         self._parser.add_argument('--weights_summary', type=str, default=None, choices=[
                                   'top', 'full'], help='prints a summary of the weights when training begins.')
+        self._parser.add_argument('--tune_debug', action='store_true',
+                                  default=False, help='whether to use debug mode while tuning.')
 
     def _str_to_str(self, s):
         return None if s == 'None' or s == 'none' else s
@@ -144,6 +156,14 @@ class ProjectParameters:
         if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
+
+        # tune
+        if project_parameters.tune_gpu is None:
+            project_parameters.tune_gpu = torch.cuda.device_count()/project_parameters.tune_cpu
+        if project_parameters.mode == 'tune':
+            project_parameters.num_workers = project_parameters.tune_cpu
+        project_parameters.hyperparameter_config_path = abspath(
+            project_parameters.hyperparameter_config_path)
 
         return project_parameters
 
