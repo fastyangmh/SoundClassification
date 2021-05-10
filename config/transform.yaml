@@ -1,19 +1,18 @@
 train:
   audio:
     MelSpectrogram:
+    AmplitudeToDB:
   vision:
     Resize:
       - 224
       - 224
-    ColorJitter:
-    RandomRotation: 90
     RandomHorizontalFlip:
-    RandomVerticalFlip:
     RandomErasing:
 
 val:
   audio:
     MelSpectrogram:
+    AmplitudeToDB:
   vision:
     Resize:
       - 224
@@ -22,6 +21,7 @@ val:
 test:
   audio:
     MelSpectrogram:
+    AmplitudeToDB:
   vision:
     Resize:
       - 224
@@ -30,6 +30,7 @@ test:
 predict:
   audio:
     MelSpectrogram:
+    AmplitudeToDB:
   vision:
     Resize:
       - 224
