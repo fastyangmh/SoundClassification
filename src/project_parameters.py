@@ -5,6 +5,7 @@ from os import makedirs
 import torch
 import numpy as np
 from timm import list_models
+from datetime import datetime
 
 # class
 
@@ -77,6 +78,10 @@ class ProjectParameters:
                                   default=False, help='whether to use early stopping while training.')
         self._parser.add_argument('--patience', type=int, default=3,
                                   help='number of checks with no improvement after which training will be stopped.')
+
+        # evaluate
+        self._parser.add_argument(
+            '--n_splits', type=int, default=5, help='number of folds. must be at least 2.')
 
         # tune
         self._parser.add_argument(
@@ -156,6 +161,11 @@ class ProjectParameters:
         if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
+
+        # evaluate
+        if project_parameters.mode == 'evaluate':
+            project_parameters.k_fold_data_path = './k_fold_dataset{}'.format(
+                datetime.now().strftime('%Y%m%d%H%M%S'))
 
         # tune
         if project_parameters.tune_gpu is None:
