@@ -16,7 +16,7 @@ class Predict:
         self.project_parameters = project_parameters
         self.model = create_model(project_parameters=project_parameters).eval()
         self.transform = get_transform_from_file(
-            file_path=project_parameters.transform_config_path)['predict']
+            filepath=project_parameters.transform_config_path)['predict']
 
     def get_result(self, data_path):
         result = []

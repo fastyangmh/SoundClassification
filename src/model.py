@@ -15,10 +15,10 @@ from os.path import basename, dirname
 # def
 
 
-def _get_backbone_model_from_file(file_path):
+def _get_backbone_model_from_file(filepath):
     import sys
-    sys.path.append('{}'.format(dirname(file_path)))
-    class_name = basename(file_path).split('.')[0]
+    sys.path.append('{}'.format(dirname(filepath)))
+    class_name = basename(filepath).split('.')[0]
     exec('from {} import {}'.format(*[class_name]*2))
     return eval('{}()'.format(class_name))
 
@@ -29,7 +29,7 @@ def _get_backbone_model(project_parameters):
                                            pretrained=False, num_classes=project_parameters.num_classes, in_chans=1)
     elif '.py' in project_parameters.backbone_model:
         backbone_model = _get_backbone_model_from_file(
-            file_path=project_parameters.backbone_model)
+            filepath=project_parameters.backbone_model)
     else:
         assert False, 'please check the backbone model. the backbone model: {}'.format(
             project_parameters.backbone_model)
@@ -46,7 +46,7 @@ def _get_loss_function(project_parameters):
 
 def _get_optimizer(model_parameters, project_parameters):
     optimizer_config = load_yaml(
-        file_path=project_parameters.optimizer_config_path)
+        filepath=project_parameters.optimizer_config_path)
     optimizer_name = list(optimizer_config.keys())[0]
     if optimizer_name in dir(optim):
         for name, value in optimizer_config.items():

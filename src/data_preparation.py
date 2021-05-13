@@ -73,7 +73,7 @@ class DataModule(LightningDataModule):
         super().__init__()
         self.project_parameters = project_parameters
         self.transform_dict = get_transform_from_file(
-            file_path=project_parameters.transform_config_path)
+            filepath=project_parameters.transform_config_path)
 
     def prepare_data(self):
         if self.project_parameters.predefined_dataset is None:
