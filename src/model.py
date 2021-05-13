@@ -3,9 +3,6 @@ import timm
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
 from src.project_parameters import ProjectParameters
-from inspect import getmembers, isclass
-from importlib import import_module
-from importlib.util import spec_from_file_location, module_from_spec
 from pytorch_lightning import LightningModule
 import torch.nn as nn
 from pytorch_lightning.metrics import Accuracy, ConfusionMatrix
@@ -13,18 +10,17 @@ import pandas as pd
 import numpy as np
 from src.utils import load_checkpoint, load_yaml
 import torch.optim as optim
-from os.path import basename
+from os.path import basename, dirname
 
 # def
 
 
 def _get_backbone_model_from_file(file_path):
-    class_name = [name for name, obj in getmembers(import_module(
-        file_path[:-3].replace('/', '.'))) if isclass(obj) and name == basename(file_path).split('.')[0]][0]
-    spec = spec_from_file_location(class_name, file_path)
-    module = module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module, class_name
+    import sys
+    sys.path.append('{}'.format(dirname(file_path)))
+    class_name = basename(file_path).split('.')[0]
+    exec('from {} import {}'.format(*[class_name]*2))
+    return eval('{}()'.format(class_name))
 
 
 def _get_backbone_model(project_parameters):
@@ -32,10 +28,8 @@ def _get_backbone_model(project_parameters):
         backbone_model = timm.create_model(model_name=project_parameters.backbone_model,
                                            pretrained=False, num_classes=project_parameters.num_classes, in_chans=1)
     elif '.py' in project_parameters.backbone_model:
-        custom_backbone_model_module, custom_backbone_model_class_name = _get_backbone_model_from_file(
+        backbone_model = _get_backbone_model_from_file(
             file_path=project_parameters.backbone_model)
-        backbone_model = eval('custom_backbone_model_module.{}()'.format(
-            custom_backbone_model_class_name))
     else:
         assert False, 'please check the backbone model. the backbone model: {}'.format(
             project_parameters.backbone_model)
