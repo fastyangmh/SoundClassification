@@ -13,17 +13,14 @@ import pandas as pd
 import numpy as np
 from src.utils import load_checkpoint, load_yaml
 import torch.optim as optim
+from os.path import basename
 
 # def
 
 
 def _get_backbone_model_from_file(file_path):
-    class_name = [name for name, obj in getmembers(
-        import_module(file_path[:-3].replace('/', '.'))) if isclass(obj)]
-    if len(class_name) > 1:
-        assert False, 'the custom model has multiple class, please reduce class to 1.'
-    else:
-        class_name = class_name[0]
+    class_name = [name for name, obj in getmembers(import_module(
+        file_path[:-3].replace('/', '.'))) if isclass(obj) and name == basename(file_path).split('.')[0]][0]
     spec = spec_from_file_location(class_name, file_path)
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
