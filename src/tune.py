@@ -16,7 +16,7 @@ import numpy as np
 
 def _get_hyperparameter_space(project_parameters):
     hyperparameter_space_config = load_yaml(
-        file_path=project_parameters.hyperparameter_config_path)
+        filepath=project_parameters.hyperparameter_config_path)
     assert hyperparameter_space_config is not None, 'the hyperparameter space config has not any content.'
     hyperparameter_space = {}
     for parameter_type in hyperparameter_space_config.keys():

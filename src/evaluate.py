@@ -17,7 +17,7 @@ def _train_val_dataset_from_data_path(project_parameters):
     data, label = [], []
     for stage in ['train', 'val']:
         for c in project_parameters.classes.keys():
-            files = get_files(file_path=join(
+            files = get_files(filepath=join(
                 project_parameters.data_path, '{}/{}'.format(stage, c)), file_type=['wav'])
             data += sorted(files)
             label += [project_parameters.classes[c]]*len(files)

@@ -13,19 +13,19 @@ from glob import glob
 # def
 
 
-def get_files(file_path, file_type):
+def get_files(filepath, file_type):
     files = []
     if type(file_type) != list:
         file_type = [file_type]
     for v in file_type:
-        files += sorted(glob(join(file_path, '*.{}'.format(v))))
+        files += sorted(glob(join(filepath, '*.{}'.format(v))))
     return files
 
 
 def calculate_data_weight(classes, data_path):
     data_weight = {}
     for c in classes.keys():
-        files = get_files(file_path=join(
+        files = get_files(filepath=join(
             data_path, 'train/{}'.format(c)), file_type=['wav'])
         data_weight[c] = len(files)
     data_weight = {c: 1-(data_weight[c]/sum(data_weight.values()))
@@ -69,15 +69,15 @@ def pad_waveform(waveform, max_waveform_length):
     return waveform
 
 
-def load_yaml(file_path):
-    with open(file=file_path, mode='r') as f:
+def load_yaml(filepath):
+    with open(file=filepath, mode='r') as f:
         config = safe_load(f)
     return config
 
 
-def get_transform_from_file(file_path):
+def get_transform_from_file(filepath):
     transform_dict = {}
-    transform_config = load_yaml(file_path=file_path)
+    transform_config = load_yaml(filepath=filepath)
     for stage in transform_config.keys():
         transform_dict[stage] = {}
         for transform_type in transform_config[stage].keys():
