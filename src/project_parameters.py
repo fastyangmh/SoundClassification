@@ -50,7 +50,7 @@ class ProjectParameters:
         ), help='how many subprocesses to use for data loading.')
         self._parser.add_argument(
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
-        self._parser.add_argument('--transform_config_path', type=str,
+        self._parser.add_argument('--transform_config_path', type=self._str_to_str,
                                   default='config/transform.yaml', help='the transform config path.')
 
         # model
@@ -147,8 +147,9 @@ class ProjectParameters:
         assert not any((np.array(project_parameters.cutoff_freq)/project_parameters.sample_rate)
                        > 1), "please check the cutoff_freq whether it satisfies Nyquist's theorem."
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
-        project_parameters.transform_config_path = abspath(
-            project_parameters.transform_config_path)
+        if project_parameters.transform_config_path is not None:
+            project_parameters.transform_config_path = abspath(
+                project_parameters.transform_config_path)
 
         # model
         project_parameters.optimizer_config_path = abspath(
