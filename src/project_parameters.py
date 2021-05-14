@@ -52,6 +52,8 @@ class ProjectParameters:
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
         self._parser.add_argument('--transform_config_path', type=str,
                                   default='config/transform.yaml', help='the transform config path.')
+        self._parser.add_argument('--no_mosaic', action='store_true',
+                                  default=False, help='whether to use mosaic while data preparation.')
 
         # model
         self._parser.add_argument('--backbone_model', type=str, required=True,
@@ -149,6 +151,7 @@ class ProjectParameters:
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
         project_parameters.transform_config_path = abspath(
             project_parameters.transform_config_path)
+        project_parameters.use_mosaic = not project_parameters.no_mosaic
 
         # model
         project_parameters.optimizer_config_path = abspath(

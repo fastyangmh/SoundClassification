@@ -40,7 +40,7 @@ class Predict:
                 result.append(self.model(data).tolist()[0])
         else:
             dataset = AudioFolder(
-                root=data_path, project_parameters=self.project_parameters, transform=self.transform)
+                root=data_path, project_parameters=self.project_parameters, stage='predict', transform=self.transform)
             data_loader = DataLoader(dataset=dataset, batch_size=self.project_parameters.batch_size,
                                      pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
             with torch.no_grad():

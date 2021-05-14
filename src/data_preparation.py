@@ -9,21 +9,59 @@ import torchaudio
 import numpy as np
 from torch.utils.data import DataLoader
 from src.utils import pad_waveform
+from copy import copy
 from torchvision.datasets import DatasetFolder
+import torch
+import random
 import warnings
 warnings.filterwarnings('ignore')
 
 
 # class
+
+
+class MosaicAudio:
+    def __init__(self, samples) -> None:
+        self.samples = samples
+
+    def get_data(self, index):
+        filepath, label = self.samples[index]
+        samples = copy(self.samples)
+        samples.remove((filepath, label))
+        samples = np.array(samples)
+        samples = samples[samples[:, 1] == str(label), 0]
+        temp_wav = []
+        temp_sample_rate = []
+        for f in [filepath]+list(samples[random.sample(population=range(len(samples)), k=4)]):
+            w, s = self._vad(filepath=f)
+            temp_wav.append(w)
+            temp_sample_rate.append(s)
+        return torch.cat(temp_wav, 1), label, np.mean(temp_sample_rate)
+
+    def _vad(self, filepath):
+        wav, sample_rate = torchaudio.load(filepath)
+        threshold = torch.abs(wav).mean()
+        voiced_index = torch.where(wav > threshold)[1]
+        wav = wav[:, voiced_index[0]:voiced_index[-1]][:, :sample_rate]
+        if len(wav[0]) < sample_rate:
+            wav = pad_waveform(waveform=wav, max_waveform_length=sample_rate)
+        return wav, sample_rate
+
+
 class AudioFolder(DatasetFolder):
-    def __init__(self, root: str, project_parameters, transform=None, loader=None):
+    def __init__(self, root: str, project_parameters, stage, transform=None, loader=None):
         super().__init__(root, loader, extensions=('.wav'), transform=transform)
         self.project_parameters = project_parameters
         self.transform = transform
+        self.mosaic_audio = MosaicAudio(
+            samples=self.samples) if project_parameters.use_mosaic and stage == 'train' else None
 
     def __getitem__(self, index: int):
-        filepath, label = self.samples[index]
-        data, sample_rate = torchaudio.load(filepath=filepath)
+        if self.mosaic_audio is not None and random.random() > 0.5:
+            data, label, sample_rate = self.mosaic_audio.get_data(index=index)
+        else:
+            filepath, label = self.samples[index]
+            data, sample_rate = torchaudio.load(filepath=filepath)
         assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
             sample_rate)
         if self.project_parameters.filter_type is not None:
@@ -79,7 +117,7 @@ class DataModule(LightningDataModule):
         if self.project_parameters.predefined_dataset is None:
             self.dataset = {}
             for stage in ['train', 'val', 'test']:
-                self.dataset[stage] = AudioFolder(root=join(self.project_parameters.data_path, stage),
+                self.dataset[stage] = AudioFolder(root=join(self.project_parameters.data_path, stage), stage=stage,
                                                   transform=self.transform_dict[stage], project_parameters=self.project_parameters)
                 # modify the maximum number of files
                 if self.project_parameters.max_files is not None:
