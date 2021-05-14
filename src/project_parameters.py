@@ -76,8 +76,12 @@ class ProjectParameters:
                                   help='multiplicative factor of learning rate decay.')
         self._parser.add_argument('--no_early_stopping', action='store_true',
                                   default=False, help='whether to use early stopping while training.')
+        self._parser.add_argument('--no_mixup', action='store_true',
+                                  default=False, help='whether to use mixup while training.')
         self._parser.add_argument('--patience', type=int, default=3,
                                   help='number of checks with no improvement after which training will be stopped.')
+        self._parser.add_argument(
+            '--alpha', type=float, default=1.0, help='mixup interpolation coefficient.')
 
         # evaluate
         self._parser.add_argument(
@@ -164,6 +168,7 @@ class ProjectParameters:
         if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
+        project_parameters.use_mixup = not project_parameters.no_mixup
 
         # evaluate
         if project_parameters.mode == 'evaluate':

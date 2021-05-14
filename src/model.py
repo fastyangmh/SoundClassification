@@ -89,6 +89,31 @@ def create_model(project_parameters):
 # class
 
 
+class Mixup:
+    def __init__(self, alpha, use_cuda, criterion) -> None:
+        self.alpha = alpha
+        self.use_cuda = use_cuda
+        self.criterion = criterion
+
+    def mixup_data(self, x, y):
+        lam = np.random.beta(
+            a=self.alpha, b=self.alpha) if self.alpha > 0 else 1
+        batch_size = x.size()[0]
+        if self.use_cuda:
+            index = torch.randperm(batch_size).cuda()
+        else:
+            index = torch.randperm(batch_size)
+        mixed_x = lam * x + (1 - lam) * x[index, :]
+        y_a, y_b = y, y[index]
+        self.y_a = y_a
+        self.y_b = y_b
+        self.lam = lam
+        return mixed_x
+
+    def mixup_criterion(self, y_hat):
+        return self.lam * self.criterion(y_hat, self.y_a) + (1 - self.lam) * self.criterion(y_hat, self.y_b)
+
+
 class Net(LightningModule):
     def __init__(self, project_parameters):
         super().__init__()
@@ -101,6 +126,8 @@ class Net(LightningModule):
         self.accuracy = Accuracy()
         self.confusion_matrix = ConfusionMatrix(
             num_classes=project_parameters.num_classes)
+        self.mixup = Mixup(alpha=project_parameters.alpha,
+                           use_cuda=project_parameters.use_cuda, criterion=self.loss_function) if project_parameters.use_mixup else None
 
     def forward(self, x):
         return self.activation_function(self.backbone_model(x))
@@ -134,8 +161,13 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        if self.mixup is not None:
+            x = self.mixup.mixup_data(x, y)
         y_hat = self.backbone_model(x)
-        loss = self.loss_function(y_hat, y)
+        if self.mixup is not None:
+            loss = self.mixup.mixup_criterion(y_hat=y_hat)
+        else:
+            loss = self.loss_function(y_hat, y)
         train_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
