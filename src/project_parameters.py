@@ -52,6 +52,8 @@ class ProjectParameters:
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
         self._parser.add_argument('--transform_config_path', type=self._str_to_str,
                                   default='config/transform.yaml', help='the transform config path.')
+        self._parser.add_argument('--sox_effect_config_path', type=self._str_to_str,
+                                  default='config/sox_effect.yaml', help='the sox effect config path.')
 
         # model
         self._parser.add_argument('--backbone_model', type=str, required=True,
@@ -150,6 +152,9 @@ class ProjectParameters:
         if project_parameters.transform_config_path is not None:
             project_parameters.transform_config_path = abspath(
                 project_parameters.transform_config_path)
+        if project_parameters.sox_effect_config_path is not None:
+            project_parameters.sox_effect_config_path = abspath(
+                project_parameters.sox_effect_config_path)
 
         # model
         project_parameters.optimizer_config_path = abspath(
