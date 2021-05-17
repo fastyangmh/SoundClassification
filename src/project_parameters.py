@@ -54,6 +54,8 @@ class ProjectParameters:
                                   default='config/transform.yaml', help='the transform config path.')
         self._parser.add_argument('--sox_effect_config_path', type=self._str_to_str,
                                   default='config/sox_effect.yaml', help='the sox effect config path.')
+        self._parser.add_argument('--no_mosaic', action='store_true',
+                                  default=False, help='whether to use mosaic while data preparation.')
 
         # model
         self._parser.add_argument('--backbone_model', type=str, required=True,
@@ -155,6 +157,7 @@ class ProjectParameters:
         if project_parameters.sox_effect_config_path is not None:
             project_parameters.sox_effect_config_path = abspath(
                 project_parameters.sox_effect_config_path)
+        project_parameters.use_mosaic = not project_parameters.no_mosaic
 
         # model
         project_parameters.optimizer_config_path = abspath(
