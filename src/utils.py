@@ -9,6 +9,7 @@ from torchaudio.functional import lowpass_biquad, highpass_biquad
 import torch
 from os.path import isfile, join
 from glob import glob
+import random
 
 # def
 
@@ -109,4 +110,24 @@ def get_transform_from_file(filepath):
         return transform_dict
     else:
         assert False, 'please check the transform config path: {}'.format(
+            filepath)
+
+
+def get_sox_effect_from_file(filepath):
+    if filepath is None:
+        return {}.fromkeys(['train', 'val', 'test', 'predict'], None)
+    elif isfile(filepath):
+        effect_dict = {}
+        effect_config = load_yaml(filepath=filepath)
+        for stage in effect_config.keys():
+            effect_dict[stage] = []
+            if type(effect_config[stage]) != dict:
+                effect_dict[stage] = None
+                continue
+            for effect_type, values in effect_config[stage].items():
+                effect_dict[stage].append([effect_type, '{}'.format(
+                    random.uniform(min(values), max(values)))])
+        return effect_dict
+    else:
+        assert False, 'please check the sox effect config path: {}'.format(
             filepath)

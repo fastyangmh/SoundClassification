@@ -1,0 +1,13 @@
+train:
+  stretch:
+  - 0.5
+  - 1.5
+  pitch:
+  - -500
+  - 500
+
+val:
+
+test:
+
+predict:
