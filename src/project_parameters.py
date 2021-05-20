@@ -122,11 +122,16 @@ class ProjectParameters:
     def _str_to_str_list(self, s):
         return [str(v) for v in s.split(',') if len(v) > 0]
 
+    def _get_new_dict(self, old_dict, yaml_dict):
+        for k in yaml_dict.keys():
+            del old_dict[k]
+        return {**old_dict, **yaml_dict}
+
     def parse(self):
         project_parameters = self._parser.parse_args()
         if project_parameters.parameters_config_path is not None:
-            project_parameters = argparse.Namespace(**{**load_yaml(filepath=abspath(
-                project_parameters.parameters_config_path)), **vars(project_parameters)})
+            project_parameters = argparse.Namespace(**self._get_new_dict(old_dict=vars(
+                project_parameters), yaml_dict=load_yaml(filepath=abspath(project_parameters.parameters_config_path))))
         else:
             del project_parameters.parameters_config_path
 
