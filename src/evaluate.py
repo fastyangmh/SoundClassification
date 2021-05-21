@@ -80,7 +80,7 @@ def _parse_k_fold_result(results):
 
 
 def _calculate_mean_and_error(arrays):
-    return np.mean(arrays), (max(arrays)-min(arrays)/2)
+    return np.mean(arrays), (max(arrays)-min(arrays))/2
 
 
 def evaluate(project_parameters):
