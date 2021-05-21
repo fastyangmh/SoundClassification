@@ -38,7 +38,7 @@ n_splits: 5
 tune_iter: 100
 tune_cpu: 1
 tune_gpu: null
-hyperparameter_config_path: config/hyperparameter_config.yaml
+hyperparameter_config_path: config/hyperparameter.yaml
 
 # debug
 max_files: null
