@@ -1,0 +1,37 @@
+train:
+  audio:
+    MelSpectrogram:
+    AmplitudeToDB:
+  vision:
+    Resize:
+      - 224
+      - 224
+    RandomHorizontalFlip:
+    RandomErasing:
+
+val:
+  audio:
+    MelSpectrogram:
+    AmplitudeToDB:
+  vision:
+    Resize:
+      - 224
+      - 224
+
+test:
+  audio:
+    MelSpectrogram:
+    AmplitudeToDB:
+  vision:
+    Resize:
+      - 224
+      - 224
+
+predict:
+  audio:
+    MelSpectrogram:
+    AmplitudeToDB:
+  vision:
+    Resize:
+      - 224
+      - 224

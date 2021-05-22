@@ -1,0 +1,47 @@
+# base
+random_seed: 0
+save_path: save/
+no_cuda: False
+gpus: -1
+
+# data_preparation
+filter_type: bandpass
+cutoff_freq:
+ - 1000
+ - 2000
+batch_size: 32
+val_size: 0.2
+num_workers: 0
+no_balance: False
+transform_config_path: config/transform.yaml
+sox_effect_config_path: config/sox_effect.yaml
+no_mosaic: False
+
+# model
+checkpoint_path: null
+optimizer_config_path: config/optimizer.yaml
+
+# train
+val_iter: null
+lr: 1e-3
+train_iter: 100
+lr_scheduler: CosineAnnealingLR
+step_size: 10
+gamma: 0.1
+no_early_stopping: False
+patience: 3
+
+# evaluate
+n_splits: 5
+
+# tune
+tune_iter: 100
+tune_cpu: 1
+tune_gpu: null
+hyperparameter_config_path: config/hyperparameter.yaml
+
+# debug
+max_files: null
+profiler: null
+weights_summary: null
+tune_debug: False

@@ -1,0 +1,26 @@
+int:
+  train_iter:
+    - 10
+    - 200
+  step_size:
+    - 1
+    - 10
+  cutoff_freq_low:
+    - 1
+    - 1000
+  cutoff_freq_high:
+    - 1001
+    - 1999
+float:
+  lr:
+    - 1e-4
+    - 1e-1
+choice:
+  lr_scheduler:
+    - CosineAnnealingLR
+    - StepLR
+  filter_type:
+    - bandpass
+    - lowpass
+    - highpass
+    - None
