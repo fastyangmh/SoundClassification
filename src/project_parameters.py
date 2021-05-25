@@ -178,6 +178,9 @@ class ProjectParameters:
         if isfile(project_parameters.backbone_model):
             project_parameters.backbone_model = abspath(
                 project_parameters.backbone_model)
+        if isfile(project_parameters.checkpoint_path):
+            project_parameters.checkpoint_path = abspath(
+                project_parameters.checkpoint_path)
 
         # train
         if project_parameters.val_iter is None:
