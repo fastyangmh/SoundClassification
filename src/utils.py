@@ -40,7 +40,8 @@ def load_checkpoint(model, use_cuda, checkpoint_path):
     checkpoint = torch.load(f=checkpoint_path, map_location=map_location)
     if model.loss_function.weight is None:
         # delete the loss_function.weight in the checkpoint, because this key does not work while loading the model.
-        del checkpoint['state_dict']['loss_function.weight']
+        if 'loss_function.weight' in checkpoint['state_dict']:
+            del checkpoint['state_dict']['loss_function.weight']
     else:
         # assign the new loss_function weight to the checkpoint
         checkpoint['state_dict']['loss_function.weight'] = model.loss_function.weight
