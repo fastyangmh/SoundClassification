@@ -95,7 +95,7 @@ class Net(LightningModule):
         self.project_parameters = project_parameters
         self.backbone_model = _get_backbone_model(
             project_parameters=project_parameters)
-        self.activation_function = nn.Softmax(dim=-1)
+        self.activation_function = nn.LogSoftmax(dim=-1)
         self.loss_function = _get_loss_function(
             project_parameters=project_parameters)
         self.accuracy = Accuracy()
@@ -103,7 +103,10 @@ class Net(LightningModule):
             num_classes=project_parameters.num_classes)
 
     def forward(self, x):
-        return self.activation_function(self.backbone_model(x))
+        if self.training:
+            return self.activation_function(self.backbone_model(x))
+        else:
+            return torch.exp(self.activation_function(self.backbone_model(x)))
 
     def get_progress_bar_dict(self):
         # don't show the loss value
@@ -135,9 +138,8 @@ class Net(LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
-        train_step_accuracy = self.accuracy(y_hat, y)
+        loss = self.loss_function(y_hat, y)
+        train_step_accuracy = self.accuracy(torch.exp(y_hat), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
@@ -150,8 +152,7 @@ class Net(LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
+        loss = self.loss_function(y_hat, y)
         val_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
@@ -165,8 +166,7 @@ class Net(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
+        loss = self.loss_function(y_hat, y)
         test_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
 
