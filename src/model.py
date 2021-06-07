@@ -83,8 +83,8 @@ def _get_lr_scheduler(project_parameters, optimizer):
 def create_model(project_parameters):
     model = Net(project_parameters=project_parameters)
     if project_parameters.checkpoint_path is not None:
-        model = load_checkpoint(model=model, use_cuda=project_parameters.use_cuda,
-                                checkpoint_path=project_parameters.checkpoint_path)
+        model = load_checkpoint(model=model, num_classes=project_parameters.num_classes,
+                                use_cuda=project_parameters.use_cuda, checkpoint_path=project_parameters.checkpoint_path)
     return model
 
 # class
