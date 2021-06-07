@@ -11,6 +11,7 @@ import numpy as np
 from src.utils import load_checkpoint, load_yaml
 import torch.optim as optim
 from os.path import basename, dirname
+import torch.nn.functional as F
 
 # def
 
@@ -41,7 +42,7 @@ def _get_loss_function(project_parameters):
         weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    return nn.NLLLoss(weight=weight)
+    return nn.CrossEntropyLoss(weight=weight)
 
 
 def _get_optimizer(model_parameters, project_parameters):
@@ -95,7 +96,7 @@ class Net(LightningModule):
         self.project_parameters = project_parameters
         self.backbone_model = _get_backbone_model(
             project_parameters=project_parameters)
-        self.activation_function = nn.LogSoftmax(dim=-1)
+        self.activation_function = nn.Softmax(dim=-1)
         self.loss_function = _get_loss_function(
             project_parameters=project_parameters)
         self.accuracy = Accuracy()
@@ -103,10 +104,7 @@ class Net(LightningModule):
             num_classes=project_parameters.num_classes)
 
     def forward(self, x):
-        if self.training:
-            return self.activation_function(self.backbone_model(x))
-        else:
-            return torch.exp(self.activation_function(self.backbone_model(x)))
+        return self.activation_function(self.backbone_model(x))
 
     def get_progress_bar_dict(self):
         # don't show the loss value
@@ -137,9 +135,9 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self.backbone_model(x)
         loss = self.loss_function(y_hat, y)
-        train_step_accuracy = self.accuracy(torch.exp(y_hat), y)
+        train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
@@ -151,9 +149,9 @@ class Net(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self.backbone_model(x)
         loss = self.loss_function(y_hat, y)
-        val_step_accuracy = self.accuracy(y_hat, y)
+        val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
     def validation_epoch_end(self, outputs) -> None:
@@ -165,10 +163,10 @@ class Net(LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self.backbone_model(x)
         loss = self.loss_function(y_hat, y)
-        test_step_accuracy = self.accuracy(y_hat, y)
-        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
+        test_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
+        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': F.softmax(y_hat), 'y': y}
 
     def test_epoch_end(self, outputs) -> None:
         epoch_loss, epoch_accuracy, confmat = self._parse_outputs(
