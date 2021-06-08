@@ -25,7 +25,8 @@ def _get_trainer(project_parameters):
                    deterministic=True,
                    check_val_every_n_epoch=project_parameters.val_iter,
                    default_root_dir=project_parameters.save_path,
-                   num_sanity_val_steps=0)
+                   num_sanity_val_steps=0,
+                   precision=project_parameters.precision)
 
 
 def train(project_parameters):

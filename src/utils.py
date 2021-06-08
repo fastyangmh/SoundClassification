@@ -40,9 +40,10 @@ def load_checkpoint(model, num_classes, use_cuda, checkpoint_path):
     checkpoint = torch.load(f=checkpoint_path, map_location=map_location)
     for k in checkpoint['state_dict'].keys():
         if 'classifier.bias' in k or 'classifier.weight' in k:
-            temp = checkpoint['state_dict'][k]
-            checkpoint['state_dict'][k] = torch.stack(
-                [temp.mean(0)]*num_classes, 0)
+            if checkpoint['state_dict'][k].shape[0] != num_classes:
+                temp = checkpoint['state_dict'][k]
+                checkpoint['state_dict'][k] = torch.stack(
+                    [temp.mean(0)]*num_classes, 0)
     if model.loss_function.weight is None:
         # delete the loss_function.weight in the checkpoint, because this key does not work while loading the model.
         if 'loss_function.weight' in checkpoint['state_dict']:
