@@ -27,7 +27,7 @@ def _get_backbone_model_from_file(filepath):
 def _get_backbone_model(project_parameters):
     if project_parameters.backbone_model in timm.list_models():
         backbone_model = timm.create_model(model_name=project_parameters.backbone_model,
-                                           pretrained=False, num_classes=project_parameters.num_classes, in_chans=1)
+                                           pretrained=True, num_classes=project_parameters.num_classes, in_chans=1)
     elif '.py' in project_parameters.backbone_model:
         backbone_model = _get_backbone_model_from_file(
             filepath=project_parameters.backbone_model)
