@@ -2,7 +2,7 @@ train:
   audio:
     MelSpectrogram:
       sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
-      n_mels: 64
+      n_mels: 64  # for the predefined_dataset SPEECHCOMMANDS
     AmplitudeToDB:
   vision:
     Resize: 
@@ -15,7 +15,7 @@ val:
   audio:
     MelSpectrogram:
       sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
-      n_mels: 64
+      n_mels: 64  # for the predefined_dataset SPEECHCOMMANDS
     AmplitudeToDB:
   vision:
     Resize: 
@@ -26,7 +26,7 @@ test:
   audio:
     MelSpectrogram:
       sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
-      n_mels: 64
+      n_mels: 64  # for the predefined_dataset SPEECHCOMMANDS
     AmplitudeToDB:
   vision:
     Resize: 
@@ -37,7 +37,7 @@ predict:
   audio:
     MelSpectrogram:
       sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
-      n_mels: 64
+      n_mels: 64  # for the predefined_dataset SPEECHCOMMANDS
     AmplitudeToDB:
   vision:
     Resize: 
