@@ -18,7 +18,7 @@ class Predict:
         self.transform = get_transform_from_file(
             filepath=project_parameters.transform_config_path)['predict']
 
-    def get_result(self, data_path):
+    def __call__(self, data_path):
         result = []
         if '.wav' in data_path:
             data, sample_rate = torchaudio.load(filepath=data_path)
@@ -54,9 +54,9 @@ if __name__ == '__main__':
     project_parameters = ProjectParameters().parse()
 
     # predict the data path
-    result = Predict(project_parameters=project_parameters).get_result(
+    result = Predict(project_parameters=project_parameters)(
         data_path=project_parameters.data_path)
     # use [:-1] to remove the latest comma
     print(('{},'*project_parameters.num_classes).format(*
-                                                        project_parameters.classes.keys())[:-1])
+                                                        project_parameters.classes)[:-1])
     print(result)
