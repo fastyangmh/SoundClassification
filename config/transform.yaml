@@ -1,37 +1,45 @@
 train:
   audio:
     MelSpectrogram:
+      sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
+      n_mels: 64
     AmplitudeToDB:
   vision:
-    Resize:
+    Resize: 
       - 224
       - 224
-    RandomHorizontalFlip:
     RandomErasing:
+      value: -100
 
 val:
   audio:
     MelSpectrogram:
+      sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
+      n_mels: 64
     AmplitudeToDB:
   vision:
-    Resize:
+    Resize: 
       - 224
       - 224
 
 test:
   audio:
     MelSpectrogram:
+      sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
+      n_mels: 64
     AmplitudeToDB:
   vision:
-    Resize:
+    Resize: 
       - 224
       - 224
 
 predict:
   audio:
     MelSpectrogram:
+      sample_rate: 16000  # for the predefined_dataset SPEECHCOMMANDS
+      n_mels: 64
     AmplitudeToDB:
   vision:
-    Resize:
+    Resize: 
       - 224
       - 224
