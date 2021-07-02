@@ -103,6 +103,9 @@ class Net(LightningModule):
         self.confusion_matrix = ConfusionMatrix(
             num_classes=project_parameters.num_classes)
 
+    def training_forward(self, x):
+        return self.backbone_model(x)
+
     def forward(self, x):
         return self.activation_function(self.backbone_model(x))
 
@@ -128,14 +131,14 @@ class Net(LightningModule):
             y_pred = torch.cat(y_pred, 0)
             y_true = torch.cat(y_true, 0)
             confmat = pd.DataFrame(self.confusion_matrix(y_pred, y_true).tolist(
-            ), columns=self.project_parameters.classes.keys(), index=self.project_parameters.classes.keys()).astype(int)
+            ), columns=self.project_parameters.classes, index=self.project_parameters.classes).astype(int)
             return epoch_loss, epoch_accuracy, confmat
         else:
             return epoch_loss, epoch_accuracy
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.backbone_model(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
         train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
@@ -149,7 +152,7 @@ class Net(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.backbone_model(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
         val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
@@ -163,7 +166,7 @@ class Net(LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.backbone_model(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
         test_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': F.softmax(y_hat), 'y': y}

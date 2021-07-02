@@ -57,8 +57,6 @@ class ProjectParameters:
                                   default='config/transform.yaml', help='the transform config path.')
         self._parser.add_argument('--sox_effect_config_path', type=self._str_to_str,
                                   default='config/sox_effect.yaml', help='the sox effect config path.')
-        self._parser.add_argument('--no_mosaic', action='store_true',
-                                  default=False, help='whether to use mosaic while data preparation.')
 
         # model
         self._parser.add_argument('--backbone_model', type=str, required=True,
@@ -122,7 +120,10 @@ class ProjectParameters:
         return [int(v) for v in s.split(',') if len(v) > 0]
 
     def _str_to_str_list(self, s):
-        return [str(v) for v in s.split(',') if len(v) > 0]
+        if '.txt' in s:
+            return list(np.loadtxt(abspath(s), str))
+        else:
+            return [str(v) for v in s.split(',') if len(v) > 0]
 
     def _get_new_dict(self, old_dict, yaml_dict):
         for k in yaml_dict.keys():
@@ -140,8 +141,7 @@ class ProjectParameters:
         # base
         project_parameters.data_path = abspath(
             path=project_parameters.data_path)
-        if project_parameters.predefined_dataset is not None:
-            # the classes of predefined dataset will automatically get from data_preparation
+        if project_parameters.predefined_dataset is not None and project_parameters.mode != 'predict':
             project_parameters.data_path = join(
                 project_parameters.data_path, project_parameters.predefined_dataset)
             makedirs(project_parameters.data_path, exist_ok=True)
@@ -152,17 +152,16 @@ class ProjectParameters:
         # data preparation
         if project_parameters.predefined_dataset is not None:
             if project_parameters.predefined_dataset == 'SPEECHCOMMANDS':
-                project_parameters.num_classes = 35
+                project_parameters.classes = sorted(['backward', 'bed', 'bird', 'cat', 'dog', 'down', 'eight', 'five', 'follow', 'forward', 'four', 'go', 'happy', 'house', 'learn',
+                                                     'left', 'marvin', 'nine', 'no', 'off', 'on', 'one', 'right', 'seven', 'sheila', 'six', 'stop', 'three', 'tree', 'two', 'up', 'visual', 'wow', 'yes', 'zero'])
                 project_parameters.sample_rate = 16000
                 project_parameters.max_waveform_length = 1 * project_parameters.sample_rate
-            else:
-                assert False, 'please check the predefined dataset. the predefined dataset: {}'.format(
-                    project_parameters.predefined_dataset)
         else:
-            project_parameters.classes = {
-                c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
-            project_parameters.num_classes = len(project_parameters.classes)
+            project_parameters.classes = sorted(project_parameters.classes)
             project_parameters.max_waveform_length *= project_parameters.sample_rate
+        project_parameters.class_to_idx = {
+            c: idx for idx, c in enumerate(project_parameters.classes)}
+        project_parameters.num_classes = len(project_parameters.classes)
         assert not any((np.array(project_parameters.cutoff_freq)/project_parameters.sample_rate)
                        > 1), "please check the cutoff_freq whether it satisfies Nyquist's theorem."
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
@@ -172,7 +171,6 @@ class ProjectParameters:
         if project_parameters.sox_effect_config_path is not None:
             project_parameters.sox_effect_config_path = abspath(
                 project_parameters.sox_effect_config_path)
-        project_parameters.use_mosaic = not project_parameters.no_mosaic
 
         # model
         project_parameters.optimizer_config_path = abspath(

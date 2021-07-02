@@ -123,8 +123,18 @@ def tune(project_parameters):
                 best_trial.config['cutoff_freq'].append(value)
         best_trial.config['cutoff_freq'] = (
             '{},'*len(best_trial.config['cutoff_freq']))[:-1].format(*best_trial.config['cutoff_freq'])
-    print('best trial config command: --num_workers {}{}'.format(project_parameters.num_workers,
-                                                                 (' --{} {}'*len(best_trial.config)).format(*np.concatenate(list(zip(best_trial.config.keys(), best_trial.config.values()))))))
+    if 'parameters_config_path' in project_parameters:
+        output = 'num_workers: {}'.format(project_parameters.num_workers)
+        for k, v in best_trial.config.items():
+            if k == 'cutoff_freq':
+                output += '\n{}:\n  - {}\n  - {}'.format(
+                    k, v.split(',')[0], v.split(',')[1])
+            else:
+                output += '\n{}: {}'.format(k, v)
+        print('best trial config command:\n{}'.format(output))
+    else:
+        print('best trial config command: --num_workers {}{}'.format(project_parameters.num_workers, (' --{} {}' *
+                                                                                                      len(best_trial.config)).format(*np.concatenate(list(zip(best_trial.config.keys(), best_trial.config.values()))))))
     shutdown()
     return result
 

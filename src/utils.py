@@ -25,7 +25,7 @@ def get_files(filepath, file_type):
 
 def calculate_data_weight(classes, data_path):
     data_weight = {}
-    for c in classes.keys():
+    for c in classes:
         files = get_files(filepath=join(
             data_path, 'train/{}'.format(c)), file_type=['wav'])
         data_weight[c] = len(files)
