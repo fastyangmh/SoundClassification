@@ -10,8 +10,6 @@ import torchaudio
 from torch.utils.data import DataLoader
 from src.utils import pad_waveform
 from torchvision.datasets import DatasetFolder
-import warnings
-warnings.filterwarnings('ignore')
 
 
 # class
@@ -26,16 +24,16 @@ class AudioFolder(DatasetFolder):
     def __getitem__(self, index: int):
         filepath, label = self.samples[index]
         data, sample_rate = torchaudio.load(filepath=filepath)
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.sox_effect_config_path is not None:
             effects = get_sox_effect_from_file(
                 filepath=self.project_parameters.sox_effect_config_path)[self.stage]
             if effects is not None:
                 data, _ = torchaudio.sox_effects.apply_effects_tensor(
                     tensor=data, sample_rate=sample_rate, effects=effects)
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.filter_type is not None:
             data = digital_filter(waveform=data, filter_type=self.project_parameters.filter_type,
                                   sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
@@ -66,16 +64,16 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
 
     def __getitem__(self, n: int):
         data, sample_rate, label = super().__getitem__(n)[:3]
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.sox_effect_config_path is not None:
             effects = get_sox_effect_from_file(
                 filepath=self.project_parameters.sox_effect_config_path)[self.stage]
             if effects is not None:
                 data, _ = torchaudio.sox_effects.apply_effects_tensor(
                     tensor=data, sample_rate=sample_rate, effects=effects)
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.filter_type is not None:
             data = digital_filter(waveform=data, filter_type=self.project_parameters.filter_type,
                                   sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
