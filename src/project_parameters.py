@@ -86,6 +86,10 @@ class ProjectParameters:
         self._parser.add_argument('--precision', type=int, default=32, choices=[
                                   16, 32], help='full precision (32) or half precision (16). Can be used on CPU, GPU or TPUs.')
 
+        # predict
+        self._parser.add_argument('--gui', action='store_true', default=False,
+                                  help='whether to use the gui window while predicting.')
+
         # evaluate
         self._parser.add_argument(
             '--n_splits', type=int, default=5, help='number of folds. must be at least 2.')
@@ -189,6 +193,9 @@ class ProjectParameters:
         if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
+
+        # predict
+        project_parameters.use_gui = project_parameters.gui
 
         # evaluate
         if project_parameters.mode == 'evaluate':
