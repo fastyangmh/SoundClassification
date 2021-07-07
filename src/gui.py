@@ -59,6 +59,7 @@ class GUI:
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
         data = data.cpu().data.numpy()[0]
+        self.gallery_image_canvas.figure.clear()
         subplot1 = self.gallery_image_canvas.figure.add_subplot(211)
         subplot1.plot(np.linspace(0, len(waveform[0]), len(
             waveform[0]))/sample_rate, waveform[0])
