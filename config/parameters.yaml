@@ -19,6 +19,8 @@ sox_effect_config_path: config/sox_effect.yaml
 # model
 checkpoint_path: null
 optimizer_config_path: config/optimizer.yaml
+alpha: 0.2
+loss_function: BCELoss
 
 # train
 val_iter: null
