@@ -102,6 +102,8 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
             label = label*(1-self.project_parameters.alpha) + \
                 (self.project_parameters.alpha/self.project_parameters.num_classes)
             label = label.astype(np.float32)
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            label = self.class_to_idx[label]
         return data, label
 
 
