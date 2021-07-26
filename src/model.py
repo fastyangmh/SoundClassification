@@ -42,7 +42,7 @@ def _get_loss_function(project_parameters):
         weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    return nn.CrossEntropyLoss(weight=weight)
+    return nn.BCELoss(weight=weight) if project_parameters.loss_function == 'BCELoss' else nn.CrossEntropyLoss(weight=weight)
 
 
 def _get_optimizer(model_parameters, project_parameters):
@@ -104,7 +104,10 @@ class Net(LightningModule):
             num_classes=project_parameters.num_classes)
 
     def training_forward(self, x):
-        return self.backbone_model(x)
+        if self.project_parameters.loss_function == 'BCELoss':
+            return self.activation_function(self.backbone_model(x))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            return self.backbone_model(x)
 
     def forward(self, x):
         return self.activation_function(self.backbone_model(x))
@@ -140,7 +143,10 @@ class Net(LightningModule):
         x, y = batch
         y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
+        if self.project_parameters.loss_function == 'BCELoss':
+            train_step_accuracy = self.accuracy(y_hat.argmax(-1), y.argmax(-1))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
@@ -154,7 +160,10 @@ class Net(LightningModule):
         x, y = batch
         y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
+        if self.project_parameters.loss_function == 'BCELoss':
+            val_step_accuracy = self.accuracy(y_hat.argmax(-1), y.argmax(-1))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
     def validation_epoch_end(self, outputs) -> None:
@@ -168,8 +177,14 @@ class Net(LightningModule):
         x, y = batch
         y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        test_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
-        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': F.softmax(y_hat), 'y': y}
+        if self.project_parameters.loss_function == 'BCELoss':
+            y_hat = y_hat.argmax(-1)
+            y = y.argmax(-1)
+            test_step_accuracy = self.accuracy(y_hat, y)
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            y_hat = F.softmax(y_hat, dim=-1)
+            test_step_accuracy = self.accuracy(y_hat, y)
+        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
 
     def test_epoch_end(self, outputs) -> None:
         epoch_loss, epoch_accuracy, confmat = self._parse_outputs(

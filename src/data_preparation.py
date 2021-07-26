@@ -10,9 +10,10 @@ import torchaudio
 from torch.utils.data import DataLoader
 from src.utils import pad_waveform
 from torchvision.datasets import DatasetFolder
-
+import numpy as np
 
 # class
+
 
 class AudioFolder(DatasetFolder):
     def __init__(self, root: str, project_parameters, stage, transform=None, loader=None):
@@ -46,6 +47,13 @@ class AudioFolder(DatasetFolder):
             data = self.transform['audio'](data)
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
+        if self.project_parameters.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.project_parameters.num_classes)[label]
+            # label smoothing
+            label = label*(1-self.project_parameters.alpha) + \
+                (self.project_parameters.alpha/self.project_parameters.num_classes)
+            label = label.astype(np.float32)
         return data, label
 
 
@@ -86,7 +94,17 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
             data = self.transform['audio'](data)
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
-        return data, self.class_to_idx[label]
+        if self.project_parameters.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.project_parameters.num_classes)[
+                self.class_to_idx[label]]
+            # label smoothing
+            label = label*(1-self.project_parameters.alpha) + \
+                (self.project_parameters.alpha/self.project_parameters.num_classes)
+            label = label.astype(np.float32)
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            label = self.class_to_idx[label]
+        return data, label
 
 
 class DataModule(LightningDataModule):
