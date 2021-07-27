@@ -45,14 +45,14 @@ class GUI:
         # this is Tkinter default background-color
         facecolor = (0.9254760742, 0.9254760742, 0.9254760742)
         self.gallery_image_canvas = FigureCanvasTkAgg(
-            Figure(figsize=(7, 7), facecolor=facecolor), master=self.window)
+            Figure(figsize=(5, 5), facecolor=facecolor), master=self.window)
 
     def _load_audio(self):
         self.data_path = filedialog.askopenfilename(
             initialdir='./', title='Select audio file', filetypes=(('Audio Files', '.wav .ogg'),   ('All Files', '*.*')))
         waveform, sample_rate = torchaudio.load(filepath=self.data_path)
         if sample_rate != self.project_parameters.sample_rate:
-            messagebox.showinfo(title='Error!', message='please check the sample_rate and input sample_rate.\nthe sample_rate: {}\n the input sample_rate: {}'.format(
+            messagebox.showerror(title='Error!', message='please check the sample_rate and input sample_rate.\nthe sample_rate: {}\n the input sample_rate: {}'.format(
                 sample_rate, self.project_parameters.sample_rate))
         if self.transform is not None:
             data = self.transform['audio'](waveform)
@@ -75,7 +75,7 @@ class GUI:
         if self.data_path is not None:
             playsound(sound=self.data_path, block=True)
         else:
-            messagebox.showinfo(
+            messagebox.showerror(
                 title='Error!', message='please select an audio file!')
 
     def _recognize(self):
@@ -86,7 +86,7 @@ class GUI:
             self.result_label.config(
                 text=self.project_parameters.classes[probability.argmax()])
         else:
-            messagebox.showinfo(
+            messagebox.showerror(
                 title='Error!', message='please select an image!')
 
     def run(self):
