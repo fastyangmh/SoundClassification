@@ -45,7 +45,7 @@ class GUI:
         # this is Tkinter default background-color
         facecolor = (0.9254760742, 0.9254760742, 0.9254760742)
         self.gallery_image_canvas = FigureCanvasTkAgg(
-            Figure(figsize=(7, 7), facecolor=facecolor), master=self.window)
+            Figure(figsize=(5, 5), facecolor=facecolor), master=self.window)
 
     def _load_audio(self):
         self.data_path = filedialog.askopenfilename(
