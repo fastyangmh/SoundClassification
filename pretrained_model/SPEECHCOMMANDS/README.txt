@@ -1,6 +1,6 @@
 The SPEECHCOMMANDS_mnasnet_small_checkpoint.ckpt is used the following parameters to train.
 
-python main.py --mode train --data_path data/ --predefined_dataset SPEECHCOMMANDS --classes None --sample_rate None --max_waveform_length None --backbone_model mnasnet_small --batch_size 128 --loss_function BCELoss --num_workers 4 --alpha 0.6041526410898493 --lr 0.0011956794537532043 --lr_scheduler StepLR --step_size 5 --train_iter 90
+python main.py --mode train --data_path data/ --predefined_dataset SPEECHCOMMANDS --classes None --sample_rate None --max_waveform_length None --backbone_model mnasnet_small --batch_size 128 --loss_function BCELoss --num_workers 4 --alpha 0.6041526410898493 --lr 0.0011956794537532043 --lr_scheduler StepLR --step_size 5 --train_iter 90 --filter None
 
 The SPEECHCOMMANDS_mnasnet_small_checkpoint.ckpt training result is the following.
 
@@ -42,7 +42,7 @@ wow              1     5     0     1     6    10      0    10       4        2  
 yes              2     1     1     7     0     1      8     1       0        0     2     1      2      8      5    36       1     4    12    13     0     4      6      0       1     6     2      5     1     3    20       6     2  3062     5
 zero             0     0     2     0     0    15      4     0       4        0     5    12      0      0      2     2       3     3    18     1     0     3      0     30      16    23    14      9     0    34    23      23     0     6  2998
 --------------------------------------------------------------------------------
-test accuracy: 0.8889145116640612, test loss: 0.10791041453679402
+test accuracy: 0.8944315302605722, test loss: 0.10778144576206107
 --------------------------------------------------------------------------------
 
 test the val dataset
@@ -85,7 +85,7 @@ wow              0    1     0    0    0     0      0     0       0        0     
 yes              0    0     0    1    0     0      0     0       0        0     0    0      0      0      0     1       0     0    0    0    0    0      0      0       0    1     0      0     0    0    0       0    0  393     1
 zero             0    0     0    0    0     0      0     0       0        0     0    0      0      0      0     0       0     0    0    0    0    0      0      1       0    0     1      0     0    2    1       2    0    0   377
 --------------------------------------------------------------------------------
-test accuracy: 0.9541121797683911, test loss: 0.10595611702555265
+test accuracy: 0.9556169869043888, test loss: 0.10597370736874066
 --------------------------------------------------------------------------------
 
 test the test dataset
@@ -128,5 +128,5 @@ wow              0    0     0    0    0     0      0     0       0        0     
 yes              0    0     0    0    0     0      0     0       0        0     0    0      0      0      0     0       0     0    0    0    0    0      0      0       0    1     0      0     0    0    0       0    0  418     0
 zero             0    0     1    0    0     0      0     0       0        0     0    0      0      0      0     0       0     0    0    0    0    0      0      2       3    1     0      0     0    4    1       1    0    0   405
 --------------------------------------------------------------------------------
-test accuracy: 0.951029069894968, test loss: 0.10610516040131103
+test accuracy: 0.9520239823086317, test loss: 0.1060556210577488
 --------------------------------------------------------------------------------
