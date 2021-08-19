@@ -15,6 +15,8 @@ class Predict:
     def __init__(self, project_parameters) -> None:
         self.project_parameters = project_parameters
         self.model = create_model(project_parameters=project_parameters).eval()
+        if project_parameters.use_cuda:
+            self.model = self.model.cuda()
         self.transform = get_transform_from_file(
             filepath=project_parameters.transform_config_path)['predict']
 
@@ -36,6 +38,8 @@ class Predict:
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
             data = data[None]
+            if self.project_parameters.use_cuda:
+                data = data.cuda()
             with torch.no_grad():
                 result.append(self.model(data).tolist()[0])
         else:
@@ -45,6 +49,8 @@ class Predict:
                                      pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
             with torch.no_grad():
                 for data, _ in data_loader:
+                    if self.project_parameters.use_cuda:
+                        data = data.cuda()
                     result.append(self.model(data).tolist())
         return np.concatenate(result, 0).round(2)
 
