@@ -16,12 +16,12 @@ import torch.nn.functional as F
 # def
 
 
-def _get_backbone_model_from_file(filepath):
+def _get_backbone_model_from_file(filepath, num_classes):
     import sys
     sys.path.append('{}'.format(dirname(filepath)))
     class_name = basename(filepath).split('.')[0]
     exec('from {} import {}'.format(*[class_name]*2))
-    return eval('{}()'.format(class_name))
+    return eval('{}(num_classes={})'.format(class_name, num_classes))
 
 
 def _get_backbone_model(project_parameters):
@@ -30,7 +30,7 @@ def _get_backbone_model(project_parameters):
                                            pretrained=True, num_classes=project_parameters.num_classes, in_chans=1)
     elif '.py' in project_parameters.backbone_model:
         backbone_model = _get_backbone_model_from_file(
-            filepath=project_parameters.backbone_model)
+            filepath=project_parameters.backbone_model, num_classes=project_parameters.num_classes)
     else:
         assert False, 'please check the backbone model. the backbone model: {}'.format(
             project_parameters.backbone_model)
