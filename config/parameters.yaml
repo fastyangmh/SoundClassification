@@ -10,7 +10,6 @@ cutoff_freq:
  - 1000
  - 2000
 batch_size: 32
-val_size: 0.2
 num_workers: 0
 no_balance: False
 transform_config_path: config/transform.yaml
