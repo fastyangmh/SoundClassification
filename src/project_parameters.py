@@ -47,8 +47,6 @@ class ProjectParameters:
             '--batch_size', type=int, default=32, help='how many samples per batch to load.')
         self._parser.add_argument('--classes', type=self._str_to_str_list, required=True,
                                   help='the classes of data. if use a predefined dataset, please set value as None.')
-        self._parser.add_argument('--val_size', type=float, default=0.1,
-                                  help='the validation data size used for the predefined dataset.')
         self._parser.add_argument('--num_workers', type=int, default=torch.get_num_threads(
         ), help='how many subprocesses to use for data loading.')
         self._parser.add_argument(
