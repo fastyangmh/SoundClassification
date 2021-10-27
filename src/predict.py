@@ -15,10 +15,12 @@ class Predict:
     def __init__(self, project_parameters) -> None:
         self.project_parameters = project_parameters
         self.model = create_model(project_parameters=project_parameters).eval()
+        if project_parameters.use_cuda:
+            self.model = self.model.cuda()
         self.transform = get_transform_from_file(
             filepath=project_parameters.transform_config_path)['predict']
 
-    def get_result(self, data_path):
+    def __call__(self, data_path):
         result = []
         if '.wav' in data_path:
             data, sample_rate = torchaudio.load(filepath=data_path)
@@ -36,6 +38,8 @@ class Predict:
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
             data = data[None]
+            if self.project_parameters.use_cuda:
+                data = data.cuda()
             with torch.no_grad():
                 result.append(self.model(data).tolist()[0])
         else:
@@ -45,6 +49,8 @@ class Predict:
                                      pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
             with torch.no_grad():
                 for data, _ in data_loader:
+                    if self.project_parameters.use_cuda:
+                        data = data.cuda()
                     result.append(self.model(data).tolist())
         return np.concatenate(result, 0).round(2)
 
@@ -54,9 +60,9 @@ if __name__ == '__main__':
     project_parameters = ProjectParameters().parse()
 
     # predict the data path
-    result = Predict(project_parameters=project_parameters).get_result(
+    result = Predict(project_parameters=project_parameters)(
         data_path=project_parameters.data_path)
     # use [:-1] to remove the latest comma
     print(('{},'*project_parameters.num_classes).format(*
-                                                        project_parameters.classes.keys())[:-1])
+                                                        project_parameters.classes)[:-1])
     print(result)

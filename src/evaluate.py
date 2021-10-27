@@ -16,16 +16,16 @@ from shutil import copy2, copytree, rmtree
 def _train_val_dataset_from_data_path(project_parameters):
     data, label = [], []
     for stage in ['train', 'val']:
-        for c in project_parameters.classes.keys():
+        for c in project_parameters.classes:
             files = get_files(filepath=join(
                 project_parameters.data_path, '{}/{}'.format(stage, c)), file_type=['wav'])
             data += sorted(files)
-            label += [project_parameters.classes[c]]*len(files)
+            label += [project_parameters.class_to_idx[c]]*len(files)
     return {'data': np.array(data), 'label': np.array(label)}
 
 
 def _copy_files_to_destination_path(files, destination_path, project_parameters):
-    for c in project_parameters.classes.keys():
+    for c in project_parameters.classes:
         makedirs(name=join(destination_path, c), exist_ok=True)
         for f in files:
             if c in f:
@@ -91,14 +91,18 @@ def evaluate(project_parameters):
     results = _get_k_fold_result(project_parameters=project_parameters)
     results = _parse_k_fold_result(results=results)
     print('-'*30)
-    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
-                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation training accuracy mean:\t{} ± {}'.format(*
                                                                             _calculate_mean_and_error(arrays=results['train'][1])))
+    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
+                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation validation accuracy mean:\t{} ± {}'.format(*
                                                                               _calculate_mean_and_error(arrays=results['val'][1])))
+    print('k-fold cross-validation validation loss mean:\t{} ± {}'.format(*
+                                                                          _calculate_mean_and_error(arrays=results['val'][0])))
     print('k-fold cross-validation test accuracy mean:\t{} ± {}'.format(*
                                                                         _calculate_mean_and_error(arrays=results['test'][1])))
+    print('k-fold cross-validation test loss mean:\t{} ± {}'.format(*
+                                                                    _calculate_mean_and_error(arrays=results['test'][0])))
     rmtree(path=project_parameters.k_fold_data_path)
     return results
 

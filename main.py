@@ -4,6 +4,7 @@ from src.train import train
 from src.evaluate import evaluate
 from src.predict import Predict
 from src.tune import tune
+from src.gui import GUI
 
 # def
 
@@ -18,11 +19,15 @@ def main(project_parameters):
         else:
             evaluate(project_parameters=project_parameters)
     elif project_parameters.mode == 'predict':
-        result = Predict(project_parameters=project_parameters).get_result(
-            data_path=project_parameters.data_path)
-        print(('{},'*project_parameters.num_classes).format(*
-                                                            project_parameters.classes.keys())[:-1])
-        print(result)
+        if project_parameters.use_gui:
+            gui = GUI(project_parameters=project_parameters)
+            gui.run()
+        else:
+            result = Predict(project_parameters=project_parameters)(
+                data_path=project_parameters.data_path)
+            print(('{},'*project_parameters.num_classes).format(*
+                                                                project_parameters.classes)[:-1])
+            print(result)
     elif project_parameters.mode == 'tune':
         result = tune(project_parameters=project_parameters)
     return result

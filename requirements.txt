@@ -1,3 +1,5 @@
+matplotlib
+playsound
 ipython
 timm
 torch

@@ -5,31 +5,32 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningModule
 import torch.nn as nn
-from pytorch_lightning.metrics import Accuracy, ConfusionMatrix
+from torchmetrics import Accuracy, ConfusionMatrix
 import pandas as pd
 import numpy as np
 from src.utils import load_checkpoint, load_yaml
 import torch.optim as optim
 from os.path import basename, dirname
+import torch.nn.functional as F
 
 # def
 
 
-def _get_backbone_model_from_file(filepath):
+def _get_backbone_model_from_file(filepath, num_classes):
     import sys
     sys.path.append('{}'.format(dirname(filepath)))
     class_name = basename(filepath).split('.')[0]
     exec('from {} import {}'.format(*[class_name]*2))
-    return eval('{}()'.format(class_name))
+    return eval('{}(num_classes={})'.format(class_name, num_classes))
 
 
 def _get_backbone_model(project_parameters):
     if project_parameters.backbone_model in timm.list_models():
         backbone_model = timm.create_model(model_name=project_parameters.backbone_model,
-                                           pretrained=False, num_classes=project_parameters.num_classes, in_chans=1)
+                                           pretrained=True, num_classes=project_parameters.num_classes, in_chans=1)
     elif '.py' in project_parameters.backbone_model:
         backbone_model = _get_backbone_model_from_file(
-            filepath=project_parameters.backbone_model)
+            filepath=project_parameters.backbone_model, num_classes=project_parameters.num_classes)
     else:
         assert False, 'please check the backbone model. the backbone model: {}'.format(
             project_parameters.backbone_model)
@@ -41,7 +42,7 @@ def _get_loss_function(project_parameters):
         weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    return nn.CrossEntropyLoss(weight=weight)
+    return nn.BCELoss(weight=weight) if project_parameters.loss_function == 'BCELoss' else nn.CrossEntropyLoss(weight=weight)
 
 
 def _get_optimizer(model_parameters, project_parameters):
@@ -82,8 +83,8 @@ def _get_lr_scheduler(project_parameters, optimizer):
 def create_model(project_parameters):
     model = Net(project_parameters=project_parameters)
     if project_parameters.checkpoint_path is not None:
-        model = load_checkpoint(model=model, use_cuda=project_parameters.use_cuda,
-                                checkpoint_path=project_parameters.checkpoint_path)
+        model = load_checkpoint(model=model, num_classes=project_parameters.num_classes,
+                                use_cuda=project_parameters.use_cuda, checkpoint_path=project_parameters.checkpoint_path)
     return model
 
 # class
@@ -101,6 +102,12 @@ class Net(LightningModule):
         self.accuracy = Accuracy()
         self.confusion_matrix = ConfusionMatrix(
             num_classes=project_parameters.num_classes)
+
+    def training_forward(self, x):
+        if self.project_parameters.loss_function == 'BCELoss':
+            return self.activation_function(self.backbone_model(x))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            return self.backbone_model(x)
 
     def forward(self, x):
         return self.activation_function(self.backbone_model(x))
@@ -127,16 +134,19 @@ class Net(LightningModule):
             y_pred = torch.cat(y_pred, 0)
             y_true = torch.cat(y_true, 0)
             confmat = pd.DataFrame(self.confusion_matrix(y_pred, y_true).tolist(
-            ), columns=self.project_parameters.classes.keys(), index=self.project_parameters.classes.keys()).astype(int)
+            ), columns=self.project_parameters.classes, index=self.project_parameters.classes).astype(int)
             return epoch_loss, epoch_accuracy, confmat
         else:
             return epoch_loss, epoch_accuracy
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.backbone_model(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        train_step_accuracy = self.accuracy(y_hat, y)
+        if self.project_parameters.loss_function == 'BCELoss':
+            train_step_accuracy = self.accuracy(y_hat.argmax(-1), y.argmax(-1))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
@@ -148,9 +158,12 @@ class Net(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        val_step_accuracy = self.accuracy(y_hat, y)
+        if self.project_parameters.loss_function == 'BCELoss':
+            val_step_accuracy = self.accuracy(y_hat.argmax(-1), y.argmax(-1))
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
     def validation_epoch_end(self, outputs) -> None:
@@ -162,9 +175,15 @@ class Net(LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self.training_forward(x)
         loss = self.loss_function(y_hat, y)
-        test_step_accuracy = self.accuracy(y_hat, y)
+        if self.project_parameters.loss_function == 'BCELoss':
+            y_hat = y_hat.argmax(-1)
+            y = y.argmax(-1)
+            test_step_accuracy = self.accuracy(y_hat, y)
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            y_hat = F.softmax(y_hat, dim=-1)
+            test_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
 
     def test_epoch_end(self, outputs) -> None:

@@ -25,7 +25,7 @@ def get_files(filepath, file_type):
 
 def calculate_data_weight(classes, data_path):
     data_weight = {}
-    for c in classes.keys():
+    for c in classes:
         files = get_files(filepath=join(
             data_path, 'train/{}'.format(c)), file_type=['wav'])
         data_weight[c] = len(files)
@@ -34,13 +34,20 @@ def calculate_data_weight(classes, data_path):
     return data_weight
 
 
-def load_checkpoint(model, use_cuda, checkpoint_path):
+def load_checkpoint(model, num_classes, use_cuda, checkpoint_path):
     map_location = torch.device(
         device='cuda') if use_cuda else torch.device(device='cpu')
     checkpoint = torch.load(f=checkpoint_path, map_location=map_location)
+    for k in checkpoint['state_dict'].keys():
+        if 'classifier.bias' in k or 'classifier.weight' in k:
+            if checkpoint['state_dict'][k].shape[0] != num_classes:
+                temp = checkpoint['state_dict'][k]
+                checkpoint['state_dict'][k] = torch.stack(
+                    [temp.mean(0)]*num_classes, 0)
     if model.loss_function.weight is None:
         # delete the loss_function.weight in the checkpoint, because this key does not work while loading the model.
-        del checkpoint['state_dict']['loss_function.weight']
+        if 'loss_function.weight' in checkpoint['state_dict']:
+            del checkpoint['state_dict']['loss_function.weight']
     else:
         # assign the new loss_function weight to the checkpoint
         checkpoint['state_dict']['loss_function.weight'] = model.loss_function.weight

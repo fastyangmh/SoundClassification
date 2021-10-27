@@ -47,8 +47,6 @@ class ProjectParameters:
             '--batch_size', type=int, default=32, help='how many samples per batch to load.')
         self._parser.add_argument('--classes', type=self._str_to_str_list, required=True,
                                   help='the classes of data. if use a predefined dataset, please set value as None.')
-        self._parser.add_argument('--val_size', type=float, default=0.1,
-                                  help='the validation data size used for the predefined dataset.')
         self._parser.add_argument('--num_workers', type=int, default=torch.get_num_threads(
         ), help='how many subprocesses to use for data loading.')
         self._parser.add_argument(
@@ -57,8 +55,6 @@ class ProjectParameters:
                                   default='config/transform.yaml', help='the transform config path.')
         self._parser.add_argument('--sox_effect_config_path', type=self._str_to_str,
                                   default='config/sox_effect.yaml', help='the sox effect config path.')
-        self._parser.add_argument('--no_mosaic', action='store_true',
-                                  default=False, help='whether to use mosaic while data preparation.')
 
         # model
         self._parser.add_argument('--backbone_model', type=str, required=True,
@@ -67,6 +63,10 @@ class ProjectParameters:
                                   help='the path of the pre-trained model checkpoint.')
         self._parser.add_argument('--optimizer_config_path', type=str,
                                   default='config/optimizer.yaml', help='the optimizer config path.')
+        self._parser.add_argument('--loss_function', type=str, default='BCELoss', choices=[
+                                  'BCELoss', 'CrossEntropyLoss'], help='the loss function.')
+        self._parser.add_argument(
+            '--alpha', type=float, default=0.2, help='the weight of label smoothing.')
 
         # train
         self._parser.add_argument('--val_iter', type=self._str_to_int,
@@ -85,6 +85,12 @@ class ProjectParameters:
                                   default=False, help='whether to use early stopping while training.')
         self._parser.add_argument('--patience', type=int, default=3,
                                   help='number of checks with no improvement after which training will be stopped.')
+        self._parser.add_argument('--precision', type=int, default=32, choices=[
+                                  16, 32], help='full precision (32) or half precision (16). Can be used on CPU, GPU or TPUs.')
+
+        # predict
+        self._parser.add_argument('--gui', action='store_true', default=False,
+                                  help='whether to use the gui window while predicting.')
 
         # evaluate
         self._parser.add_argument(
@@ -120,7 +126,10 @@ class ProjectParameters:
         return [int(v) for v in s.split(',') if len(v) > 0]
 
     def _str_to_str_list(self, s):
-        return [str(v) for v in s.split(',') if len(v) > 0]
+        if '.txt' in s:
+            return list(np.loadtxt(abspath(s), str))
+        else:
+            return [str(v) for v in s.split(',') if len(v) > 0]
 
     def _get_new_dict(self, old_dict, yaml_dict):
         for k in yaml_dict.keys():
@@ -138,8 +147,7 @@ class ProjectParameters:
         # base
         project_parameters.data_path = abspath(
             path=project_parameters.data_path)
-        if project_parameters.predefined_dataset is not None:
-            # the classes of predefined dataset will automatically get from data_preparation
+        if project_parameters.predefined_dataset is not None and project_parameters.mode != 'predict':
             project_parameters.data_path = join(
                 project_parameters.data_path, project_parameters.predefined_dataset)
             makedirs(project_parameters.data_path, exist_ok=True)
@@ -150,17 +158,16 @@ class ProjectParameters:
         # data preparation
         if project_parameters.predefined_dataset is not None:
             if project_parameters.predefined_dataset == 'SPEECHCOMMANDS':
-                project_parameters.num_classes = 35
+                project_parameters.classes = sorted(['backward', 'bed', 'bird', 'cat', 'dog', 'down', 'eight', 'five', 'follow', 'forward', 'four', 'go', 'happy', 'house', 'learn',
+                                                     'left', 'marvin', 'nine', 'no', 'off', 'on', 'one', 'right', 'seven', 'sheila', 'six', 'stop', 'three', 'tree', 'two', 'up', 'visual', 'wow', 'yes', 'zero'])
                 project_parameters.sample_rate = 16000
                 project_parameters.max_waveform_length = 1 * project_parameters.sample_rate
-            else:
-                assert False, 'please check the predefined dataset. the predefined dataset: {}'.format(
-                    project_parameters.predefined_dataset)
         else:
-            project_parameters.classes = {
-                c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
-            project_parameters.num_classes = len(project_parameters.classes)
+            project_parameters.classes = sorted(project_parameters.classes)
             project_parameters.max_waveform_length *= project_parameters.sample_rate
+        project_parameters.class_to_idx = {
+            c: idx for idx, c in enumerate(project_parameters.classes)}
+        project_parameters.num_classes = len(project_parameters.classes)
         assert not any((np.array(project_parameters.cutoff_freq)/project_parameters.sample_rate)
                        > 1), "please check the cutoff_freq whether it satisfies Nyquist's theorem."
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
@@ -170,7 +177,6 @@ class ProjectParameters:
         if project_parameters.sox_effect_config_path is not None:
             project_parameters.sox_effect_config_path = abspath(
                 project_parameters.sox_effect_config_path)
-        project_parameters.use_mosaic = not project_parameters.no_mosaic
 
         # model
         project_parameters.optimizer_config_path = abspath(
@@ -178,6 +184,12 @@ class ProjectParameters:
         if isfile(project_parameters.backbone_model):
             project_parameters.backbone_model = abspath(
                 project_parameters.backbone_model)
+        if project_parameters.checkpoint_path is not None and isfile(project_parameters.checkpoint_path):
+            project_parameters.checkpoint_path = abspath(
+                project_parameters.checkpoint_path)
+        if not 0. <= project_parameters.alpha <= 1.:
+            assert False, 'please check the alpha value, the alpha value is limit from 0 to 1. input alpha value is {}'.format(
+                project_parameters.alpha)
 
         # train
         if project_parameters.val_iter is None:
@@ -186,6 +198,9 @@ class ProjectParameters:
         if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
+
+        # predict
+        project_parameters.use_gui = project_parameters.gui
 
         # evaluate
         if project_parameters.mode == 'evaluate':

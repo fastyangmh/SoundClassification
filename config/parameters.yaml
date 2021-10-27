@@ -10,16 +10,16 @@ cutoff_freq:
  - 1000
  - 2000
 batch_size: 32
-val_size: 0.2
 num_workers: 0
 no_balance: False
 transform_config_path: config/transform.yaml
 sox_effect_config_path: config/sox_effect.yaml
-no_mosaic: False
 
 # model
 checkpoint_path: null
 optimizer_config_path: config/optimizer.yaml
+alpha: 0.2
+loss_function: BCELoss
 
 # train
 val_iter: null

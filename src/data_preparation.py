@@ -1,51 +1,18 @@
 # import
 from os.path import join
+import random
 from torch.utils.data.dataset import random_split
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningDataModule
 from src.utils import digital_filter, get_transform_from_file, get_sox_effect_from_file
 from torchaudio.datasets import SPEECHCOMMANDS
 import torchaudio
-import numpy as np
 from torch.utils.data import DataLoader
 from src.utils import pad_waveform
-from copy import copy
 from torchvision.datasets import DatasetFolder
-import torch
-import random
-import warnings
-warnings.filterwarnings('ignore')
-
+import numpy as np
 
 # class
-
-
-class MosaicAudio:
-    def __init__(self, samples) -> None:
-        self.samples = samples
-
-    def get_data(self, index):
-        filepath, label = self.samples[index]
-        samples = copy(self.samples)
-        samples.remove((filepath, label))
-        samples = np.array(samples)
-        samples = samples[samples[:, 1] == str(label), 0]
-        temp_wav = []
-        temp_sample_rate = []
-        for f in [filepath]+list(samples[random.sample(population=range(len(samples)), k=4)]):
-            w, s = self._vad(filepath=f)
-            temp_wav.append(w)
-            temp_sample_rate.append(s)
-        return torch.cat(temp_wav, 1), label, np.mean(temp_sample_rate, dtype=int)
-
-    def _vad(self, filepath):
-        wav, sample_rate = torchaudio.load(filepath)
-        threshold = torch.abs(wav).mean()
-        voiced_index = torch.where(wav > threshold)[1]
-        wav = wav[:, voiced_index[0]:voiced_index[-1]][:, :sample_rate]
-        if len(wav[0]) < sample_rate:
-            wav = pad_waveform(waveform=wav, max_waveform_length=sample_rate)
-        return wav, sample_rate
 
 
 class AudioFolder(DatasetFolder):
@@ -53,24 +20,21 @@ class AudioFolder(DatasetFolder):
         super().__init__(root, loader, extensions=('.wav'), transform=transform)
         self.project_parameters = project_parameters
         self.transform = transform
-        self.mosaic_audio = MosaicAudio(
-            samples=self.samples) if project_parameters.use_mosaic and stage == 'train' else None
         self.stage = stage
 
     def __getitem__(self, index: int):
-        if self.mosaic_audio is not None and random.random() > 0.5:
-            data, label, sample_rate = self.mosaic_audio.get_data(index=index)
-        else:
-            filepath, label = self.samples[index]
-            data, sample_rate = torchaudio.load(filepath=filepath)
+        filepath, label = self.samples[index]
+        data, sample_rate = torchaudio.load(filepath=filepath)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.sox_effect_config_path is not None:
             effects = get_sox_effect_from_file(
                 filepath=self.project_parameters.sox_effect_config_path)[self.stage]
             if effects is not None:
                 data, _ = torchaudio.sox_effects.apply_effects_tensor(
                     tensor=data, sample_rate=sample_rate, effects=effects)
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.filter_type is not None:
             data = digital_filter(waveform=data, filter_type=self.project_parameters.filter_type,
                                   sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
@@ -83,6 +47,13 @@ class AudioFolder(DatasetFolder):
             data = self.transform['audio'](data)
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
+        if self.project_parameters.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.project_parameters.num_classes)[label]
+            # label smoothing
+            label = label*(1-self.project_parameters.alpha) + \
+                (self.project_parameters.alpha/self.project_parameters.num_classes)
+            label = label.astype(np.float32)
         return data, label
 
 
@@ -91,13 +62,26 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
         super().__init__(root, download=download, subset=subset)
         self.project_parameters = project_parameters
         self.transform = transform
-        self.class_to_idx = {c: idx for idx, c in enumerate(['backward', 'bed', 'bird', 'cat', 'dog', 'down', 'eight', 'five', 'follow', 'forward', 'four', 'go', 'happy', 'house',
-                                                             'learn', 'left', 'marvin', 'nine', 'no', 'off', 'on', 'one', 'right', 'seven', 'sheila', 'six', 'stop', 'three', 'tree', 'two', 'up', 'visual', 'wow', 'yes', 'zero'])}
+        self.class_to_idx = project_parameters.class_to_idx
+        if subset == 'training':
+            self.stage = 'train'
+        elif subset == 'validation':
+            self.stage = 'val'
+        elif subset == 'testing':
+            self.stage = 'test'
 
     def __getitem__(self, n: int):
         data, sample_rate, label = super().__getitem__(n)[:3]
-        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate. the sample_rate: {}'.format(
-            sample_rate)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
+        if self.project_parameters.sox_effect_config_path is not None:
+            effects = get_sox_effect_from_file(
+                filepath=self.project_parameters.sox_effect_config_path)[self.stage]
+            if effects is not None:
+                data, _ = torchaudio.sox_effects.apply_effects_tensor(
+                    tensor=data, sample_rate=sample_rate, effects=effects)
+        assert sample_rate == self.project_parameters.sample_rate, 'please check the sample_rate and input sample_rate. the sample_rate: {}, the input sample_rate: {}'.format(
+            sample_rate, self.project_parameters.sample_rate)
         if self.project_parameters.filter_type is not None:
             data = digital_filter(waveform=data, filter_type=self.project_parameters.filter_type,
                                   sample_rate=sample_rate, cutoff_freq=self.project_parameters.cutoff_freq)
@@ -110,7 +94,17 @@ class SPEECHCOMMANDS(SPEECHCOMMANDS):
             data = self.transform['audio'](data)
             if 'vision' in self.transform:
                 data = self.transform['vision'](data)
-        return data, self.class_to_idx[label]
+        if self.project_parameters.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.project_parameters.num_classes)[
+                self.class_to_idx[label]]
+            # label smoothing
+            label = label*(1-self.project_parameters.alpha) + \
+                (self.project_parameters.alpha/self.project_parameters.num_classes)
+            label = label.astype(np.float32)
+        elif self.project_parameters.loss_function == 'CrossEntropyLoss':
+            label = self.class_to_idx[label]
+        return data, label
 
 
 class DataModule(LightningDataModule):
@@ -133,11 +127,11 @@ class DataModule(LightningDataModule):
                     self.dataset[stage] = random_split(
                         dataset=self.dataset[stage], lengths=lengths)[0]
             if self.project_parameters.max_files is not None:
-                assert self.dataset['train'].dataset.class_to_idx == self.project_parameters.classes, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
-                    self.dataset['train'].dataset.class_to_idx, self.project_parameters.classes)
+                assert self.dataset['train'].dataset.class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                    self.dataset['train'].dataset.class_to_idx, self.project_parameters.class_to_idx)
             else:
-                assert self.dataset['train'].class_to_idx == self.project_parameters.classes, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
-                    self.dataset[stage].class_to_idx, self.project_parameters.classes)
+                assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                    self.dataset['train'].class_to_idx, self.project_parameters.class_to_idx)
         else:
             train_set = SPEECHCOMMANDS(root=self.project_parameters.data_path, download=True, subset='training',
                                        project_parameters=self.project_parameters, transform=self.transform_dict['train'])
@@ -146,13 +140,14 @@ class DataModule(LightningDataModule):
             test_set = SPEECHCOMMANDS(root=self.project_parameters.data_path, download=True, subset='testing',
                                       project_parameters=self.project_parameters, transform=self.transform_dict['test'])
             # modify the maximum number of files
-            for v in [train_set, val_set, test_set]:
-                v._walker = list(np.random.permutation(v._walker))[
-                    :self.project_parameters.max_files]
+            if self.project_parameters.max_files is not None:
+                for v in [train_set, val_set, test_set]:
+                    v._walker = list(random.sample(
+                        v._walker, k=self.project_parameters.max_files))
             self.dataset = {'train': train_set,
                             'val': val_set, 'test': test_set}
-            # get the classes from the train_set
-            self.project_parameters.classes = self.dataset['train'].class_to_idx
+            assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                self.dataset['train'].class_to_idx, self.project_parameters.class_to_idx)
 
     def train_dataloader(self):
         return DataLoader(dataset=self.dataset['train'], batch_size=self.project_parameters.batch_size, shuffle=True, pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
