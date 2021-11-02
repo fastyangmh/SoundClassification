@@ -62,9 +62,13 @@ class GUI:
         data = data[::-1, :]
         self.gallery_image_canvas.figure.clear()
         subplot1 = self.gallery_image_canvas.figure.add_subplot(211)
+        subplot1.title.set_text('waveform')
+        subplot1.set_xlabel('time')
+        subplot1.set_ylabel('amplitude')
         subplot1.plot(np.linspace(0, len(waveform[0]), len(
             waveform[0]))/sample_rate, waveform[0])
         subplot2 = self.gallery_image_canvas.figure.add_subplot(212)
+        subplot2.title.set_text('log mel spectrogram')
         subplot2.imshow(data)
         subplot2.axis('off')
         self.gallery_image_canvas.figure.tight_layout()
