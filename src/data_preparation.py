@@ -127,10 +127,10 @@ class DataModule(LightningDataModule):
                     self.dataset[stage] = random_split(
                         dataset=self.dataset[stage], lengths=lengths)[0]
             if self.project_parameters.max_files is not None:
-                assert self.dataset['train'].dataset.class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                assert self.dataset['train'].dataset.class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from AudioFolder: {} from argparse: {}'.format(
                     self.dataset['train'].dataset.class_to_idx, self.project_parameters.class_to_idx)
             else:
-                assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+                assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from AudioFolder: {} from argparse: {}'.format(
                     self.dataset['train'].class_to_idx, self.project_parameters.class_to_idx)
         else:
             train_set = SPEECHCOMMANDS(root=self.project_parameters.data_path, download=True, subset='training',
@@ -146,7 +146,7 @@ class DataModule(LightningDataModule):
                         v._walker, k=self.project_parameters.max_files))
             self.dataset = {'train': train_set,
                             'val': val_set, 'test': test_set}
-            assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
+            assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from AudioFolder: {} from argparse: {}'.format(
                 self.dataset['train'].class_to_idx, self.project_parameters.class_to_idx)
 
     def train_dataloader(self):

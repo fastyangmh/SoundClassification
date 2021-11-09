@@ -74,7 +74,7 @@ class GUI:
         self.gallery_image_canvas.figure.tight_layout()
         self.gallery_image_canvas.draw()
         self.data_path_label.config(
-            text='image path: {}'.format(self.data_path))
+            text='file path: {}'.format(self.data_path))
 
     def _play_audio(self):
         if self.data_path is not None:
